@@ -20,7 +20,7 @@ pthread_mutex_t mutex= PTHREAD_MUTEX_INITIALIZER;
 
 int bm = 0;
 
-double MAX_OPS = 1000*1000*100;
+double MAX_OPS = 1000*1000*1;
     int NUM_THREADS=16;
 void *doops(){
 	int rc;
@@ -138,6 +138,18 @@ int main(int argc,char *argv[]){
        agcCount++;
     }
     int tidx;
+
+    for(tidx=0;tidx<4;tidx++) { 
+        run_info[tidx].t_full = 0; // Time required for complete run 
+        run_info[tidx].t_oh = 0 ;  // Time required for overhead computations/processing 
+        run_info[tidx].t_op= 0;  // Time required for actual float computations  
+        run_info[tidx].gflops= 0; // Gflops computation
+        run_info[tidx].num_threads = 0 ;
+        run_info[tidx].max_gflops = 0 ;
+        run_info[tidx].min_gflops = 0 ;
+
+    }
+
     for(NUM_THREADS=1,tidx=0;NUM_THREADS<=4;NUM_THREADS*=2,tidx++){
     printf("Evaluating for num_thread = %d \n",NUM_THREADS);
 
@@ -233,7 +245,7 @@ int main(int argc,char *argv[]){
     printf("Num of    Total Time  overhead time  Operation Time    Gflops    Gflops     Gflops \n");
     printf("Threads    (sec)         (sec)          (sec)         (mean)      Max        Min \n");
     for(tidx=0;tidx<3;tidx++){ 
-        printf("%d      %4f     %4f       %4f       %0.4f     %0.4f     %0.4f\n",run_info[tidx].num_threads,run_info[tidx].t_full,run_info[tidx].t_oh,run_info[tidx].t_op,run_info[tidx].gflops,run_info[tidx].max_gflops,run_info[tidx].min_gflops);
+        printf("%d      %4f     %4f       %4f           %3.4f     %3.4f     %3.4f\n",run_info[tidx].num_threads,run_info[tidx].t_full,run_info[tidx].t_oh,run_info[tidx].t_op,run_info[tidx].gflops,run_info[tidx].max_gflops,run_info[tidx].min_gflops);
     }
     
 
