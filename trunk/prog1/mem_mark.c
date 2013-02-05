@@ -27,7 +27,6 @@ long block_size = 1000 ;
 char * my_memcpy(char *dest,char *src,long int size){
     // You dont have to anything just return 
     int i;
-    i =size;
     return dest;
 }
 
@@ -52,12 +51,12 @@ void *doops(){
 
     rc = pthread_mutex_lock(&mutex);
     rc = pthread_mutex_unlock(&mutex);
-    long int locn;
+    long int locn=0;
     register a;
     if(bm==1){
         for(i=0;i<MAX_OPS;i++){
             if(rand_seq == 0 ) { 
-                locn=(i%(MEM_ALLOCATED_SIZE-block_size));
+                locn=(locn+block_size)%(MEM_ALLOCATED_SIZE-block_size);
             } else { 
                 locn = rand_d() *(MEM_ALLOCATED_SIZE-block_size); 
             }
@@ -67,7 +66,7 @@ void *doops(){
     }else{
         for(i=0;i<MAX_OPS;i++){
             if(rand_seq == 0 ) { 
-                locn=(i%(MEM_ALLOCATED_SIZE-block_size));
+                locn=(locn+block_size)%(MEM_ALLOCATED_SIZE-block_size);
             } else { 
                 locn = rand_d() *(MEM_ALLOCATED_SIZE-block_size); 
                 //printf("Location = %ld \n",locn);
@@ -114,7 +113,7 @@ int main(int argc,char *argv[]){
     double thrpt_info[3*2];
     
     p = (char *) malloc(256);
-        num_fop = 16;
+    num_fop = 16;
     randomize_seed(-1); 
     while(agcCount < argc){ 
         strcpy(p , argv[agcCount]);
@@ -130,19 +129,14 @@ int main(int argc,char *argv[]){
             } else if(strchr(p,'m')!=NULL){
                 MAX_OPS = str2val(argv[agcCount+1]);
                 agcCount++;
-                if(NUM_ITERATIONS == -1) { 
-                    printf("ERROR:Invalid input \n");
-                    display_help();
-                    return -1;
-                }
             }else if(strchr(p,'r')!=NULL){
                 rand_seq = 1 ; 
             }else if(strchr(p,'s')!=NULL){
                 rand_seq = 0 ; 
+            }else if(p[1] == 'h'){
+                display_help();
+                return 0;
             }
-
-
-
         }
         agcCount++;
     }
@@ -278,11 +272,11 @@ int main(int argc,char *argv[]){
             printf("\n");
         }
         double latency;
-        latency = (1 / thrpt_info[0]);
+        latency = (1 / (thrpt_info[0]*MILLION));
         if(rand_seq == 1) { 
-            printf("\nLatency for Main Memory = %3.4f ms \n",latency / MS );
+            printf("\nLatency for Main Memory = %3.4f ns \n",latency / NS );
         }else{ 
-            printf("\nLatency for Cache Memory = %3.4f ms \n",latency / MS );
+            printf("\nLatency for Cache Memory = %3.4f ns \n",latency / NS );
         }
 
     return 0;

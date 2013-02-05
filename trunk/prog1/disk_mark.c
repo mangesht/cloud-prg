@@ -28,6 +28,7 @@ int NUM_THREADS=1;
 long block_size = 1000 ;
 long long fileSize = 2*1000*1000*1000;
 unsigned char *outbuf;
+long long max_operations[4];
 int wfd;
 
 int my_write(int dest,unsigned char *src,long int size){
@@ -39,7 +40,7 @@ int my_write(int dest,unsigned char *src,long int size){
 void *dowrite(){
     long i;
     int rc;
-     
+    
     rc = pthread_mutex_lock(&mutex);
     rc = pthread_mutex_unlock(&mutex);
     long int locn=1;
@@ -104,21 +105,31 @@ int main(int argc,char *argv[]){
     int do_not_creat_file = 0;
     char ofname[] = "bigFile.scr";
     struct stat sb;
-    
+    max_operations[0] = 1000*1000;
+    max_operations[1] = 1000*100;
+    max_operations[2] = 1000*1;
+    max_operations[3] = 8;
     p = (char *) malloc(256);
-        num_fop = 16;
+    num_fop = 16;
     randomize_seed(-1); 
-
-
+    
+   // Routine for getting input arguments  
     while(agcCount < argc){ 
         strcpy(p , argv[agcCount]);
-        printf("Processing %s \n",p);
         if(p[0] == '-'){ 
             if(p[1]=='i'){
                 NUM_ITERATIONS = str2val(argv[agcCount+1]);
                 agcCount++;
             } else if(p[1]=='m'){
-                MAX_OPS = str2val(argv[agcCount+1]);
+                if(p[2] == '1'){
+                   max_operations[0] = str2val(argv[agcCount+1]);
+                }else if (p[2] == '2'){
+                   max_operations[1] = str2val(argv[agcCount+1]);
+                }else if (p[2] == '3'){
+                   max_operations[2] = str2val(argv[agcCount+1]);
+                }else if (p[2] == '4'){
+                   max_operations[3] = str2val(argv[agcCount+1]);
+                }
                 agcCount++;
             } else if(strstr(p,"fs")!=NULL){
                 // fileSize in GB
@@ -135,7 +146,7 @@ int main(int argc,char *argv[]){
             }else if(p[1]=='s'){
                 rand_seq = 0 ; 
             }
-
+            
         }
         agcCount++;
     }
@@ -153,34 +164,40 @@ int main(int argc,char *argv[]){
     printf("Number of iterations = %d \t",NUM_ITERATIONS);
     printf("Filename = %s-----\n",ofname);
     printf("Filesize = %2.2f GB \t",(double)fileSize/BILLION);
-    printf("AccessType = %s \n",rand_seq == 1 ? "Random " : "Sequential ");
+    printf("\tAccessType = %s \n",rand_seq == 1 ? "Random " : "Sequential ");
     printf("----------------------------------------------------------------\n");
     int tidx;
     int blk_idx;
-
+    
     // Create sufficiently big file 
     if(do_not_creat_file == 0) { 
-    block_size = 4096; 
-    long int nblocks = fileSize / block_size ;
-    wfd = open(ofname,O_WRONLY | O_CREAT | O_TRUNC , 0644);
-    if(wfd <= 0) {
-        printf("Error opening file \n");
-        return -1;
-    }
-    outbuf = (unsigned char *) malloc(sizeof(unsigned char) * block_size );
-    for(blk_idx =0;blk_idx < nblocks;blk_idx++) {
-        write(wfd,outbuf,block_size);
-    }
-    close(wfd);
-    printf("File created  %s \n",ofname);
-    // File creation done 
+        long long  nblocks ;
+        block_size = 4096; 
+        nblocks = fileSize / block_size ;
+        wfd = open(ofname,O_WRONLY | O_CREAT | O_TRUNC , 0644);
+        if(wfd <= 0) {
+            printf("Error opening file \n");
+            return -1;
+        }
+        outbuf = (unsigned char *) malloc(sizeof(unsigned char) * block_size );
+        if(outbuf == NULL) {
+            printf("Memory allocation failed for outbuf \n");
+            perror("outbuf_alloc");
+        }
+        for(blk_idx =0;blk_idx < nblocks;blk_idx++) {
+            write(wfd,outbuf,block_size);
+        }
+        close(wfd);
+        printf("File created  %s \n",ofname);
+        // File creation done 
     }else{
-         printf("File not created using existing file %s \n",ofname);
+        printf("File not created. Using existing file %s \n",ofname);
     }
-
+    
     for(blk_idx = 0 ; blk_idx<4;blk_idx++) {    
         // Loop over all the block sizes one by one 
         block_size = blk_size[blk_idx];
+        MAX_OPS = max_operations[blk_idx];
         outbuf = (unsigned char *) malloc(sizeof(unsigned char) * block_size );
         printf("---------------------------------------------------------------------\n");
         printf("Checking for block size = %ld Number of transfers = %lf \n",block_size,MAX_OPS);
@@ -297,32 +314,32 @@ int main(int argc,char *argv[]){
         printf("Threads     Bytes      (sec)         (mean)      Max        Min \n");
         for(tidx=0;tidx<2;tidx++){ 
             printf("%d      %9ld       %3.4f           %3.4f     %3.4f     %3.4f\n",run_info[tidx].num_threads,block_size,run_info[tidx].t_op,run_info[tidx].throughput,run_info[tidx].max_throughput,run_info[tidx].min_throughput);
-           thrpt_info[tidx*3+blk_idx] = run_info[tidx].throughput;
+            thrpt_info[tidx*3+blk_idx] = run_info[tidx].throughput;
         }
         MAX_OPS /= 10 ;     
         free(outbuf);
     }
-
-        printf("\n-------------------------------------------------------------------------------\n");
-        printf("    Final Summary :  for %s acess \n",rand_seq == 1 ? "Random " : "Sequential ");
-        printf("-------------------------------------------------------------------------------\n");
-        printf("NumThreads\\ BlockSize       1B          1KB           1MB            1GB\n");
-        printf("-------------------------------------------------------------------------------\n");
-        for(tidx=0;tidx < 2 ;tidx++){
-            printf("%15d          ",tidx+1);
-            for(blk_idx=0;blk_idx<4;blk_idx++){ 
-                printf("%5.4f      ",thrpt_info[tidx*3+blk_idx]);
-            }
-            printf("\n");
+    
+    printf("\n-------------------------------------------------------------------------------\n");
+    printf("   Throughput Summary :  for %s acess \n",rand_seq == 1 ? "Random " : "Sequential ");
+    printf("-------------------------------------------------------------------------------\n");
+    printf("NumThreads\\ BlockSize       1B          1KB           1MB            1GB\n");
+    printf("-------------------------------------------------------------------------------\n");
+    for(tidx=0;tidx < 2 ;tidx++){
+        printf("%15d          ",tidx+1);
+        for(blk_idx=0;blk_idx<4;blk_idx++){ 
+            printf("%5.4f      ",thrpt_info[tidx*3+blk_idx]);
         }
-        double latency;
-        latency = (1 / (thrpt_info[0]*MILLION));
-        if(rand_seq == 1) { 
-            printf("\nLatency for Disk (random read) = %3.4f ms \n",latency / MS );
-        }else{ 
-            printf("\nLatency for Disk-Main Memory (sequential read ) = %3.4f ms \n",latency / MS );
-        }
-
+        printf("\n");
+    }
+    double latency;
+    latency = (1 / (thrpt_info[0]*MILLION));
+    if(rand_seq == 1) { 
+        printf("\nLatency for Disk (random read) = %3.6f ms \n",latency / MS );
+    }else{ 
+        printf("\nLatency for Disk-Main Memory (sequential read ) = %3.6f ms \n",latency / MS );
+    }
+    
     return 0;
 }
 
