@@ -1,5 +1,9 @@
 flop:flop.c
 	gcc -o flop flop.c -lrt
-benchmark:benchmark.c
-	gcc -o benchmark benchmark.c -lrt -lpthread
-    
+gflops:gflops.c
+	gcc -o gflops gflops.c -lrt -lpthread
+iops:iops.c
+	gcc -o iops iops.c -lrt -lpthread
+
+mem_mark:mem_mark.c strLib.h
+	gcc -o mem_mark mem_mark.c -lrt -lpthread -lm 
