@@ -31,13 +31,13 @@ void set_seed(int seed) {
     state = (char *) malloc(512);
     ret = (char *) malloc(512);
     ret = initstate(seed,state,64);
-    printf("\nUsing seed = %d \n",seed);
+    //printf("\nUsing seed = %d \n",seed);
 /*
     last_rand = seed;
 */
     rand_state = (struct random_data *) malloc(sizeof(struct random_data)*10);
     int r= initstate_r(seed,state,64,rand_state);
-    printf("Set seed Done \n");
+    //printf("Set seed Done \n");
 
 }
 void randomize_seed(int seed){

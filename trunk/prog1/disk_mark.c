@@ -20,31 +20,36 @@ pthread_mutex_t mutex= PTHREAD_MUTEX_INITIALIZER;
 #define NS pow((double)10,(double)-9)
 #define MS pow((double)10,(double)-3)
 int rand_seq = 0;
+int rd_wr = 0;
 int bm = 0;
 long long MAX_BLOCK_SIZE = 1000*1000;
 long long MEM_ALLOCATED_SIZE = 1000*1000*100;
 double MAX_OPS = 1000*1000*1000;
 int NUM_THREADS=1;
-long block_size = 1000 ;
+long long block_size = 1000 ;
 long long fileSize = 2*1000*1000*1000;
 unsigned char *outbuf;
 long long max_operations[4];
-int wfd;
-
+//int wfd;
+int wfd_1;
+int wfd_2;
+int verbose = 0;
 int my_write(int dest,unsigned char *src,long int size){
     // You dont have to anything just return 
     int i;
     return dest;
 }
 
-void *dowrite(){
+void *dowrite(void *wfdp){
     long i;
     int rc;
-    
+    int wfd = *((int *) wfdp); 
     rc = pthread_mutex_lock(&mutex);
     rc = pthread_mutex_unlock(&mutex);
-    long int locn=1;
+    long long locn=1;
+    long long int read_bytes;
     register a;
+    printf("File handler = %d \n",wfd);
     if(bm==1){
         for(i=0;i<MAX_OPS;i++){
             if(rand_seq == 0 ) { 
@@ -53,7 +58,16 @@ void *dowrite(){
                 locn = rand_d() *(fileSize-block_size); 
                 lseek(wfd,locn,SEEK_SET);
             }
-            write(wfd,outbuf,block_size);
+            if(rd_wr == 1) { 
+                read_bytes =  read(wfd,outbuf,block_size);
+                if(read_bytes != block_size) {
+                    printf("ERROR : read_bytes = %lld block_size = %lld \n",read_bytes,block_size);
+                    printf("Location = %lld \n",locn);
+                    exit(-1);
+                }
+            }else{ 
+                 write(wfd,outbuf,block_size);
+            }
         }
     }else{
         // dry run 
@@ -63,7 +77,11 @@ void *dowrite(){
             } else { 
                 locn = rand_d() *(MEM_ALLOCATED_SIZE-block_size); 
             }
-            my_write(wfd,outbuf,block_size);
+            if(rd_wr == 1) { 
+                my_write(wfd,outbuf,block_size);
+            }else{ 
+                my_write(wfd,outbuf,block_size);
+            }
         }
     }
     return NULL;
@@ -99,13 +117,14 @@ int main(int argc,char *argv[]){
     int agcCount =1 ;
     char *p;
     struct run_info_s run_info[4];
-    long blk_size[4] = { 1, 1000,1000*1000,1000*1000*1000};
-    double thrpt_info[3*2];
+    long long blk_size[4] = { 1, 1000,1000*1000,1000*1000*1000};
+    double thrpt_info[4*2];
     int ofd;
     int do_not_creat_file = 0;
-    char ofname[] = "bigFile.scr";
+    char ofname_1[] = "bigFile_1.scr";
+    char ofname_2[] = "bigFile_2.scr";
     struct stat sb;
-    max_operations[0] = 1000*1000;
+    max_operations[0] = 1000*1000*10;
     max_operations[1] = 1000*100;
     max_operations[2] = 1000*1;
     max_operations[3] = 8;
@@ -120,6 +139,9 @@ int main(int argc,char *argv[]){
             if(p[1]=='i'){
                 NUM_ITERATIONS = str2val(argv[agcCount+1]);
                 agcCount++;
+            } else if(p[1]=='v'){
+                //verbose mode 
+                verbose = 1;
             } else if(p[1]=='m'){
                 if(p[2] == '1'){
                    max_operations[0] = str2val(argv[agcCount+1]);
@@ -137,9 +159,13 @@ int main(int argc,char *argv[]){
                 fileSize = str2val(argv[agcCount+1]);
                 //fileSize = fileSize * BILLION;
                 agcCount++;
-            }else if(strstr(p,"fname")!=NULL){
-                strcpy(ofname,argv[agcCount+1]);
-                do_not_creat_file = 1 ;
+            }else if(strstr(p,"fname1")!=NULL){
+                strcpy(ofname_1,argv[agcCount+1]);
+                do_not_creat_file++ ;
+                agcCount++;
+            }else if(strstr(p,"fname2")!=NULL){
+                strcpy(ofname_2,argv[agcCount+1]);
+                do_not_creat_file++ ;
                 agcCount++;
             }else if(p[1]=='r'){
                 rand_seq = 1 ; 
@@ -151,18 +177,10 @@ int main(int argc,char *argv[]){
         agcCount++;
     }
     
-    wfd = open(ofname,O_RDONLY , 0644);
-    if(wfd <= 0) { 
-        printf("Error opening file \n");
-        return -1;
-    }else{
-        fstat(wfd,&sb);
-        fileSize = sb.st_size;
-        close(wfd);
-    }
     printf("\n\nRunning test with \n");
     printf("Number of iterations = %d \t",NUM_ITERATIONS);
-    printf("Filename = %s-----\n",ofname);
+    printf("Filename = %s-----\n",ofname_1);
+    printf("Filename = %s-----\n",ofname_2);
     printf("Filesize = %2.2f GB \t",(double)fileSize/BILLION);
     printf("\tAccessType = %s \n",rand_seq == 1 ? "Random " : "Sequential ");
     printf("----------------------------------------------------------------\n");
@@ -170,12 +188,27 @@ int main(int argc,char *argv[]){
     int blk_idx;
     
     // Create sufficiently big file 
-    if(do_not_creat_file == 0) { 
+    if(do_not_creat_file < 2 ) { 
         long long  nblocks ;
         block_size = 4096; 
         nblocks = fileSize / block_size ;
-        wfd = open(ofname,O_WRONLY | O_CREAT | O_TRUNC , 0644);
-        if(wfd <= 0) {
+        wfd_1 = open(ofname_1,O_WRONLY | O_CREAT | O_TRUNC , 0644);
+        if(wfd_1 <= 0) {
+            printf("Error opening file %s \n",ofname_1);
+            return -1;
+        }
+        outbuf = (unsigned char *) malloc(sizeof(unsigned char) * block_size );
+        if(outbuf == NULL) {
+            printf("Memory allocation failed for outbuf \n");
+            perror("outbuf_alloc");
+        }
+        for(blk_idx =0;blk_idx < nblocks;blk_idx++) {
+            write(wfd_1,outbuf,block_size);
+        }
+        close(wfd_1);
+        // Create second file 
+        wfd_2 = open(ofname_2,O_WRONLY | O_CREAT | O_TRUNC , 0644);
+        if(wfd_2 <= 0) {
             printf("Error opening file \n");
             return -1;
         }
@@ -185,23 +218,34 @@ int main(int argc,char *argv[]){
             perror("outbuf_alloc");
         }
         for(blk_idx =0;blk_idx < nblocks;blk_idx++) {
-            write(wfd,outbuf,block_size);
+            write(wfd_2,outbuf,block_size);
         }
-        close(wfd);
-        printf("File created  %s \n",ofname);
+        close(wfd_2);
+
+        if(verbose) printf("File created  %s \n",ofname_2);
         // File creation done 
     }else{
-        printf("File not created. Using existing file %s \n",ofname);
+    wfd_1 = open(ofname_1,O_RDONLY , 0644);
+    if(wfd_1 <= 0) { 
+        printf("Error opening file %s \n",ofname_1);
+        return -1;
+    }else{
+        fstat(wfd_1,&sb);
+        fileSize = sb.st_size;
+        close(wfd_1);
     }
-    
+
+        if(verbose) printf("File not created. Using existing file %s \n",ofname_1);
+    }
+    for(rd_wr = 0 ; rd_wr < 2 ; rd_wr++) {   
     for(blk_idx = 0 ; blk_idx<4;blk_idx++) {    
         // Loop over all the block sizes one by one 
         block_size = blk_size[blk_idx];
         MAX_OPS = max_operations[blk_idx];
         outbuf = (unsigned char *) malloc(sizeof(unsigned char) * block_size );
-        printf("---------------------------------------------------------------------\n");
-        printf("Checking for block size = %ld Number of transfers = %lf \n",block_size,MAX_OPS);
-        printf("---------------------------------------------------------------------\n");
+        if(verbose) printf("---------------------------------------------------------------------\n");
+        if(verbose) printf("Checking for block size = %lld Number of transfers = %lf \n",block_size,MAX_OPS);
+        if(verbose) printf("---------------------------------------------------------------------\n");
         for(tidx=0;tidx<4;tidx++) { 
             run_info[tidx].t_full = 0; // Time required for complete run 
             run_info[tidx].t_oh = 0 ;  // Time required for overhead computations/processing 
@@ -214,22 +258,32 @@ int main(int argc,char *argv[]){
         }
         
         for(NUM_THREADS=1,tidx=0;NUM_THREADS<=2;NUM_THREADS*=2,tidx++){
-            printf("Evaluating for num of threads = %d \n",NUM_THREADS);
+            if(verbose) printf("Evaluating for num of threads = %d \n",NUM_THREADS);
             
-            printf("Total Time  overhead time  Operation Time    Throughput \n");
-            printf("  (sec)         (sec)          (sec)            MB/s    \n");
+            if(verbose) printf("Total Time  overhead time  Operation Time    Throughput \n");
+            if(verbose) printf("  (sec)         (sec)          (sec)            MB/s    \n");
             for(ite_num=0;ite_num<NUM_ITERATIONS;ite_num++){
                 rc = pthread_mutex_lock(&mutex);
-                wfd = open(ofname,O_WRONLY);
-                if(wfd < 0){
-                    printf("Could not open file %s \n",ofname);
+                wfd_1 = open(ofname_1,O_RDWR);
+                if(wfd_1 < 0){
+                    printf("Could not open file %s \n",ofname_1);
                     perror("wfd_open");
                     return -1;
                 }
+                wfd_2 = open(ofname_2,O_RDWR);
+                if(wfd_2 < 0){
+                    printf("Could not open file %s \n",ofname_2);
+                    perror("wfd_open");
+                    return -1;
+                }
+
                 bm = 1 ; 
                 // Create threads and ask them  do run flaot operations
                 for(i=0;i<NUM_THREADS;i++){
-                    rc = pthread_create(&thread[i],NULL,dowrite,NULL);
+                    if(i==0) 
+                    rc = pthread_create(&thread[i],NULL,dowrite,(void *) &wfd_1); // Change this Mangesh 
+                    else 
+                    rc = pthread_create(&thread[i],NULL,dowrite,(void *) &wfd_2); // Change this Mangesh 
                 }
                 //sleep(1);
                 // unlock all the threads 
@@ -255,8 +309,10 @@ int main(int argc,char *argv[]){
                 bm = 0 ; 
                 rc = pthread_mutex_lock(&mutex);
                 for(i=0;i<NUM_THREADS;i++){
-                    
-                    rc = pthread_create(&thread[i],NULL,dowrite,NULL);
+                    if(i==0) 
+                    rc = pthread_create(&thread[i],NULL,dowrite,(void *)&wfd_1);
+                    else
+                    rc = pthread_create(&thread[i],NULL,dowrite,(void *)&wfd_2);
                 }
                 //sleep(1);
                 pthread_mutex_unlock(&mutex);
@@ -282,7 +338,7 @@ int main(int argc,char *argv[]){
                 double throughput;
                 bips = ((double)MAX_OPS * block_size * NUM_THREADS) / accum ; 
                 throughput = bips/MILLION;
-                printf(" %4f     %4f       %4f       %4f \n",bm_accum,oh_accum,accum,throughput);
+                if(verbose) printf(" %4f     %4f       %4f       %4f \n",bm_accum,oh_accum,accum,throughput);
                 
                 run_info[tidx].t_full+=bm_accum;
                 run_info[tidx].t_oh+=oh_accum;
@@ -297,7 +353,8 @@ int main(int argc,char *argv[]){
                     if(run_info[tidx].min_throughput > throughput) run_info[tidx].min_throughput = throughput ;
                     
                 }
-                close(wfd);
+                close(wfd_1);
+                close(wfd_2);
             }
             // for average divide it by number of iterations 
             run_info[tidx].t_full/=NUM_ITERATIONS;
@@ -307,28 +364,28 @@ int main(int argc,char *argv[]){
             //    run_info[tidx].num_threads = NUM_THREADS;
             
         }
-        printf("----------------------------------------------\n");
-        printf("    Summary : Mean parameters\n");
-        printf("----------------------------------------------\n");
-        printf("Num of    Block Size Operation Time Throughput  Throughput  Throughput \n");
-        printf("Threads     Bytes      (sec)         (mean)      Max        Min \n");
+        if(verbose) printf("----------------------------------------------\n");
+        if(verbose) printf("    Summary : Mean parameters\n");
+        if(verbose) printf("----------------------------------------------\n");
+        if(verbose) printf("Num of    Block Size Operation Time Throughput  Throughput  Throughput \n");
+        if(verbose) printf("Threads     Bytes      (sec)         (mean)      Max        Min \n");
         for(tidx=0;tidx<2;tidx++){ 
-            printf("%d      %9ld       %3.4f           %3.4f     %3.4f     %3.4f\n",run_info[tidx].num_threads,block_size,run_info[tidx].t_op,run_info[tidx].throughput,run_info[tidx].max_throughput,run_info[tidx].min_throughput);
-            thrpt_info[tidx*3+blk_idx] = run_info[tidx].throughput;
+            if(verbose) printf("%d      %9lld       %3.4f           %3.4f     %3.4f     %3.4f\n",run_info[tidx].num_threads,block_size,run_info[tidx].t_op,run_info[tidx].throughput,run_info[tidx].max_throughput,run_info[tidx].min_throughput);
+            thrpt_info[tidx*4+blk_idx] = run_info[tidx].throughput;
         }
         MAX_OPS /= 10 ;     
         free(outbuf);
     }
     
     printf("\n-------------------------------------------------------------------------------\n");
-    printf("   Throughput Summary :  for %s acess \n",rand_seq == 1 ? "Random " : "Sequential ");
+    printf(" %s Throughput Summary :  for %s acess \n",rd_wr == 1 ? "Read " : "Write",rand_seq == 1 ? "Random " : "Sequential ");
     printf("-------------------------------------------------------------------------------\n");
     printf("NumThreads\\ BlockSize       1B          1KB           1MB            1GB\n");
     printf("-------------------------------------------------------------------------------\n");
     for(tidx=0;tidx < 2 ;tidx++){
         printf("%15d          ",tidx+1);
         for(blk_idx=0;blk_idx<4;blk_idx++){ 
-            printf("%5.4f      ",thrpt_info[tidx*3+blk_idx]);
+            printf("%5.4f      ",thrpt_info[tidx*4+blk_idx]);
         }
         printf("\n");
     }
@@ -337,9 +394,9 @@ int main(int argc,char *argv[]){
     if(rand_seq == 1) { 
         printf("\nLatency for Disk (random read) = %3.6f ms \n",latency / MS );
     }else{ 
-        printf("\nLatency for Disk-Main Memory (sequential read ) = %3.6f ms \n",latency / MS );
+        printf("\nLatency for Disk-Main Memory (sequential %s ) = %3.6f ms \n",rd_wr == 1 ? "Read" : "Write", latency / MS  );
     }
-    
+    }    
     return 0;
 }
 

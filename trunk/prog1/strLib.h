@@ -13,7 +13,7 @@ long long str2val(char *str){
         res = res * 10 + str[k] - '0';
        // printf("res = %lf \n",(double)res);
     }
-     printf("Returning res = %lld for %s\n",res,str);
+    //printf("Returning res = %lld for %s\n",res,str);
     return res;
 }
 
