@@ -20,7 +20,7 @@ pthread_mutex_t mutex= PTHREAD_MUTEX_INITIALIZER;
 
 int bm = 0;
 
-double MAX_OPS = 1000*1000*1;
+double MAX_OPS = 1000*1000*100;
     int NUM_THREADS=16;
 void *doops(){
 	int rc;
