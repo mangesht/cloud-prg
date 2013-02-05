@@ -7,3 +7,6 @@ iops:iops.c
 
 mem_mark:mem_mark.c strLib.h
 	gcc -o mem_mark mem_mark.c -lrt -lpthread -lm 
+disk_mark:disk_mark.c strLib.h strLib.h
+	gcc -o disk_mark disk_mark.c -lrt -lpthread -lm 
+
