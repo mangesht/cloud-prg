@@ -174,11 +174,11 @@ int main(int argc,char *argv[]){
             }
             //sleep(1);
             // unlock all the threads 
-            pthread_mutex_unlock(&mutex);
             if(clock_gettime(CLOCK_REALTIME,&start) == -1) {
                 perror("clock_gettime");
                 exit(EXIT_FAILURE);
             }
+            pthread_mutex_unlock(&mutex);
             
             for(i=0;i<NUM_THREADS;i++){
                 rc = pthread_join(thread[i],NULL);
@@ -200,11 +200,11 @@ int main(int argc,char *argv[]){
                 rc = pthread_create(&thread[i],NULL,doops,NULL);
             }
             //sleep(1);
-            pthread_mutex_unlock(&mutex);
             if(clock_gettime(CLOCK_REALTIME,&start) == -1) {
                 perror("clock_gettime");
                 exit(EXIT_FAILURE);
             }
+            pthread_mutex_unlock(&mutex);
             
             for(i=0;i<NUM_THREADS;i++){
                 rc = pthread_join(thread[i],NULL);

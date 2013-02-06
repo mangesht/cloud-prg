@@ -24,7 +24,7 @@ int rd_wr = 0;
 int bm = 0;
 long long MAX_BLOCK_SIZE = 1000*1000;
 long long MEM_ALLOCATED_SIZE = 1000*1000*100;
-double MAX_OPS = 1000*1000*1000;
+long long MAX_OPS = 1000*1000*1000;
 int NUM_THREADS=1;
 long long block_size = 1000 ;
 long long fileSize = 2*1000*1000*1000;
@@ -33,7 +33,7 @@ long long max_operations[4];
 //int wfd;
 int wfd_1;
 int wfd_2;
-int verbose = 0;
+int verbose = 1;
 int my_write(int dest,unsigned char *src,long int size){
     // You dont have to anything just return 
     int i;
@@ -41,15 +41,14 @@ int my_write(int dest,unsigned char *src,long int size){
 }
 
 void *dowrite(void *wfdp){
-    long i;
+    long long i;
     int rc;
     int wfd = *((int *) wfdp); 
     rc = pthread_mutex_lock(&mutex);
     rc = pthread_mutex_unlock(&mutex);
     long long locn=1;
-    long long int read_bytes;
-    register a;
-    printf("File handler = %d \n",wfd);
+    long long  read_bytes;
+    //printf("File handler = %d \n",wfd);
     if(bm==1){
         for(i=0;i<MAX_OPS;i++){
             if(rand_seq == 0 ) { 
@@ -79,6 +78,9 @@ void *dowrite(void *wfdp){
             }
             if(rd_wr == 1) { 
                 my_write(wfd,outbuf,block_size);
+                if(read_bytes != block_size) {
+                    // Do dummy something 
+                }
             }else{ 
                 my_write(wfd,outbuf,block_size);
             }
@@ -87,9 +89,40 @@ void *dowrite(void *wfdp){
     return NULL;
 } 
 void display_help(){
-    printf("\n Usage mem_mark [-i iteration_num] [-m max_trans] \n");
-    printf("iteration_num -> Number of iterations the operation needs to repeat. Default is 5 \n");
-    printf("max_trans     -> Maximum number of transfers in each iteration. Default is 1000000000 (1 BILLION) \n");
+printf("Usage: disk_mark [-s] [-r] [-h]  [-i num_iterations] [-fs file_size] [-fname1 filename1] [ -fname2 filename2] [-m1 max_transactions_1] [-m2 max_transactions_2] [-m3 max_transactions_3] [-m4 max_transactions_4] \n");
+printf("\n");
+printf(" num_iterations - The number of iterations to be carried for each memory transaction set. A set consists of max_transactions accesses. \n");
+printf("Default value is 5\n");
+printf("\n");
+printf("\t-s - Selects the type of disk accesses as sequential. \n");
+printf("\t-r - Selects the type of disk accesses as random.\n");
+printf("\t-h - Displays help for the program \n");
+printf("\n");
+printf("\tfilesize- This indicates the size of the file in bytes to be used in program. The program creates the files of this size for read / writes operations. \n");
+printf("Default value is 2000000000 (2G) \n");
+printf("\n");
+printf("\tfilename1/filename2: When the user does not want program to create the file, user can provide path of existing file. The program performs benchmarking operations on the user defined files. Filename1 is used one of the threads, while filename2 is used by the other thread.\n");
+printf("When user defines the filenames, option -fs filesize is ignored. Using this option saves 2 large files creation time. \n");
+printf("\n");
+printf("\tmax_transactions1 - The number of memory accesses to be performed in an iteration for 1B block transfer. \n");
+printf("Default value is 10000000 (10M)\n");
+printf("\n");
+printf("\tmax_transactions2 - The number of memory accesses to be performed in an iteration for 1KB block transfer.\n");
+printf("Default value is 100000 (100K) \n");
+printf("\n");
+printf("\tmax_transactions3 - The number of memory accesses to be performed in an iteration for 1MB block transfer. \n");
+printf("Default value is 1000 \n");
+printf("\n");
+printf("\tmax_transactions4 - The number of memory accesses to be performed in an iteration for 1B block transfer. \n");
+printf("Default value is 8\n");
+printf("\n");
+printf("The maximum transactions options can be used by user to keep the time taken for transfers almost same. \n");
+printf("\tExample : \n");
+printf("./disk_mark -s -i 10 -fs 8000000000 -m1 1000000 -m2 100000 -m3 1000 -m4 4 \n");
+printf("\n");
+printf("./disk_mark -r -i 10 -fname1 bigFile1.txt -fname2 bigFile2.txt  \n");
+
+
     
 }
 
@@ -171,6 +204,9 @@ int main(int argc,char *argv[]){
                 rand_seq = 1 ; 
             }else if(p[1]=='s'){
                 rand_seq = 0 ; 
+            }else if(p[1]=='h'){
+                display_help();
+                return 0;
             }
             
         }
@@ -244,7 +280,7 @@ int main(int argc,char *argv[]){
         MAX_OPS = max_operations[blk_idx];
         outbuf = (unsigned char *) malloc(sizeof(unsigned char) * block_size );
         if(verbose) printf("---------------------------------------------------------------------\n");
-        if(verbose) printf("Checking for block size = %lld Number of transfers = %lf \n",block_size,MAX_OPS);
+        if(verbose) printf("Checking for block size = %lld Number of transfers = %lld \n",block_size,MAX_OPS);
         if(verbose) printf("---------------------------------------------------------------------\n");
         for(tidx=0;tidx<4;tidx++) { 
             run_info[tidx].t_full = 0; // Time required for complete run 
@@ -287,11 +323,11 @@ int main(int argc,char *argv[]){
                 }
                 //sleep(1);
                 // unlock all the threads 
-                pthread_mutex_unlock(&mutex);
                 if(clock_gettime(CLOCK_REALTIME,&start) == -1) {
                     perror("clock_gettime");
                     exit(EXIT_FAILURE);
                 }
+                pthread_mutex_unlock(&mutex);
                 
                 for(i=0;i<NUM_THREADS;i++){
                     rc = pthread_join(thread[i],NULL);
@@ -315,11 +351,11 @@ int main(int argc,char *argv[]){
                     rc = pthread_create(&thread[i],NULL,dowrite,(void *)&wfd_2);
                 }
                 //sleep(1);
-                pthread_mutex_unlock(&mutex);
                 if(clock_gettime(CLOCK_REALTIME,&start) == -1) {
                     perror("clock_gettime");
                     exit(EXIT_FAILURE);
                 }
+                pthread_mutex_unlock(&mutex);
                 
                 for(i=0;i<NUM_THREADS;i++){
                     rc = pthread_join(thread[i],NULL);

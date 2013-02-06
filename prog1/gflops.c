@@ -21,7 +21,7 @@ pthread_mutex_t mutex= PTHREAD_MUTEX_INITIALIZER;
 int bm = 0;
 
 double MAX_OPS = 1000*1000*100;
-    int NUM_THREADS=16;
+    int NUM_THREADS;
 void *doops(){
 	int rc;
 	double i;
@@ -92,7 +92,7 @@ int str2val(char *str){
     return res;
 }
 void display_help(){
-   printf("\n Usage benchmark [-i iteration_num] \n");
+   printf("\n Usage gflops [-i iteration_num] \n");
 
 }
 struct run_info_s{
@@ -165,12 +165,12 @@ int main(int argc,char *argv[]){
 		rc = pthread_create(&thread[i],NULL,doops,NULL);
 	}
 	//sleep(1);
-    // unlock all the threads 
-	pthread_mutex_unlock(&mutex);
     if(clock_gettime(CLOCK_REALTIME,&start) == -1) {
         perror("clock_gettime");
         exit(EXIT_FAILURE);
     }
+    // unlock all the threads 
+	pthread_mutex_unlock(&mutex);
 
 	for(i=0;i<NUM_THREADS;i++){
 		rc = pthread_join(thread[i],NULL);
@@ -192,11 +192,11 @@ int main(int argc,char *argv[]){
 		rc = pthread_create(&thread[i],NULL,doops,NULL);
 	}
 	//sleep(1);
-	pthread_mutex_unlock(&mutex);
     if(clock_gettime(CLOCK_REALTIME,&start) == -1) {
         perror("clock_gettime");
         exit(EXIT_FAILURE);
     }
+	pthread_mutex_unlock(&mutex);
 
 	for(i=0;i<NUM_THREADS;i++){
 		rc = pthread_join(thread[i],NULL);
