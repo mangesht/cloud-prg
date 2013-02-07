@@ -92,7 +92,15 @@ int str2val(char *str){
     return res;
 }
 void display_help(){
-    printf("\n Usage iops [-i iteration_num] \n");
+    printf("Usage: iops [-i num_iterations] [-m max_ops] [-h]\n");
+    printf("num_iteration - The number of iteration to be carried out for a set of max_ops integer  operations set. The default value is 5. \n");
+    printf("\n");
+    printf("max_ops - The number of integer operation sets to be run in an iteration. One set of integer operations consists of addition, multiplication, total 16 operations. The default value is 100 Million. \n");
+    printf("\n");
+    printf("Thus total number of operations = num_iterations * max_ops * 16 \n");
+    printf("\n");
+    printf("-h displays help for the program \n");
+    
     
 }
 struct run_info_s{
@@ -141,6 +149,9 @@ int main(int argc,char *argv[]){
                     display_help();
                     return -1;
                 }
+            }else if(p[1]=='h'){
+                display_help();
+                return 0;
             }
         }
         agcCount++;

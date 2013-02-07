@@ -48,8 +48,8 @@ void *doops(){
         return NULL;
         //return (void*)NULL;
     }
-
-
+    
+    
     rc = pthread_mutex_lock(&mutex);
     rc = pthread_mutex_unlock(&mutex);
     long long locn=0;
@@ -79,9 +79,22 @@ void *doops(){
     return NULL;
 } 
 void display_help(){
-    printf("\n Usage mem_mark [-i iteration_num] [-m max_trans] \n");
-    printf("iteration_num -> Number of iterations the operation needs to repeat. Default is 5 \n");
-    printf("max_trans     -> Maximum number of transfers in each iteration. Default is 1000000000 (1 BILLION) \n");
+    
+    printf("Usage: mem_mark [-i num_iterations] [-m max_transactions] [-s] [-r] [-h] [-m1 max_transactions_1] [-m2 max_transactions_2] [-m3 max_transactions_3]\n");
+    printf("\n");
+    printf(" num_iterations -  number of iterations to be carried for each memory transaction set. A set consists of max_transactions accesses. \n");
+    printf("Default value is 5. \n");
+    printf("\n");
+    printf("max_transactions -  number of memory accesses to be performed in an iteration for 1B block transfer. The 1KB  and 1MB block sizes the max_transactions are reduced to 1 percent. This is done to keep the run time for each block size comparable.  \n");
+    printf("Default value is 1000000000 (1G) \n");
+    printf("\n");
+    printf("-s - The type of memory accesses as sequential. \n");
+    printf("-r - Selects the type of memory accesses as random.\n");
+    printf("-h - Displays help for the program \n");
+    printf("\n");
+    printf("Example : \n");
+    printf("./mem_mark -m1  1000000000  m2 190900 -i 25 -r \n");
+    printf("./mem_mark -s -m1 500000000 -i 50 \n");
     
 }
 
@@ -132,13 +145,13 @@ int main(int argc,char *argv[]){
                 }
             } else if(p[1]=='m'){
                 if(p[2] == '1'){
-                   max_operations[0] = str2val(argv[agcCount+1]);
+                    max_operations[0] = str2val(argv[agcCount+1]);
                 }else if (p[2] == '2'){
-                   max_operations[1] = str2val(argv[agcCount+1]);
+                    max_operations[1] = str2val(argv[agcCount+1]);
                 }else if (p[2] == '3'){
-                   max_operations[2] = str2val(argv[agcCount+1]);
+                    max_operations[2] = str2val(argv[agcCount+1]);
                 }else if (p[2] == '4'){
-                   max_operations[3] = str2val(argv[agcCount+1]);
+                    max_operations[3] = str2val(argv[agcCount+1]);
                 }
                 agcCount++;
             }else if(strchr(p,'r')!=NULL){
@@ -267,30 +280,30 @@ int main(int argc,char *argv[]){
         printf("Threads     Bytes      (sec)         (mean)      Max        Min \n");
         for(tidx=0;tidx<2;tidx++){ 
             printf("%d      %9ld       %3.4f           %3.4f     %3.4f     %3.4f\n",run_info[tidx].num_threads,block_size,run_info[tidx].t_op,run_info[tidx].throughput,run_info[tidx].max_throughput,run_info[tidx].min_throughput);
-           thrpt_info[tidx*3+blk_idx] = run_info[tidx].throughput;
+            thrpt_info[tidx*3+blk_idx] = run_info[tidx].throughput;
         }
         MAX_OPS /= 10 ;     
     }
-
-        printf("-------------------------------------------------------------------------------\n");
-        printf("    Final Summary :  for %s acess \n",rand_seq == 1 ? "Random " : "Sequential ");
-        printf("-------------------------------------------------------------------------------\n");
-        printf("NumThreads\\ BlockSize       1B          1KB           1MB\n");
-        printf("-------------------------------------------------------------------------------\n");
-        for(tidx=0;tidx < 2 ;tidx++){
-            printf("%15d          ",tidx+1);
-            for(blk_idx=0;blk_idx<3;blk_idx++){ 
-                printf("%5.4f      ",thrpt_info[tidx*3+blk_idx]);
-            }
-            printf("\n");
+    
+    printf("-------------------------------------------------------------------------------\n");
+    printf("    Final Summary :  for %s acess \n",rand_seq == 1 ? "Random " : "Sequential ");
+    printf("-------------------------------------------------------------------------------\n");
+    printf("NumThreads\\ BlockSize       1B          1KB           1MB\n");
+    printf("-------------------------------------------------------------------------------\n");
+    for(tidx=0;tidx < 2 ;tidx++){
+        printf("%15d          ",tidx+1);
+        for(blk_idx=0;blk_idx<3;blk_idx++){ 
+            printf("%5.4f      ",thrpt_info[tidx*3+blk_idx]);
         }
-        double latency;
-        latency = (1 / (thrpt_info[0]*MILLION));
-        if(rand_seq == 1) { 
-            printf("\nLatency for Main Memory = %3.4f ns \n",latency / NS );
-        }else{ 
-            printf("\nLatency for Cache Memory = %3.4f ns \n",latency / NS );
-        }
-
+        printf("\n");
+    }
+    double latency;
+    latency = (1 / (thrpt_info[0]*MILLION));
+    if(rand_seq == 1) { 
+        printf("\nLatency for Main Memory = %3.4f ns \n",latency / NS );
+    }else{ 
+        printf("\nLatency for Cache Memory = %3.4f ns \n",latency / NS );
+    }
+    
     return 0;
 }
