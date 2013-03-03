@@ -1,23 +1,53 @@
 package src.edu.cs.iit.cs553;
 import javax.naming.Context; 
+
+import sun.awt.Mutex;
+
 import java.util.*;
 import java.io.*;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.List;
+import java.util.Date ;
 
 
+class ValuePair implements Comparable <ValuePair>{
+	public String key; 
+	public int value;
+	ValuePair(){
+		value = 0 ; 
+	}
+	ValuePair(String s1,int v1){
+		this.key = s1;
+		this.value = v1 ; 
+	}
+	@Override
+	public int compareTo(ValuePair arg0) {
+		
+		//
+		return this.key.compareTo(arg0.key);
+	}
+}
 class wcInfo {
 public Map<String,Integer> map ;
-public char[] buf;
+
 public ArrayList  <Character > separators; 
 public ArrayList  <Character > specials;
+public int mapIdx;
 	wcInfo(){
 		map = new HashMap<String,Integer>();
 		separators = new  ArrayList <Character> ();
 		specials = new  ArrayList <Character> ();
+		mapIdx = 0 ;
 	}
 }
 
+class threadBuf{
+	public char[] buf;
+	threadBuf(){
+		// 
+	}
+}
 class findMap extends Thread   {
 	// This class provides a thread that computes the key and value pair
 long offset ;
@@ -60,6 +90,7 @@ public ArrayList  <Character > specials;
 		int si;
 		int ei;
 		int strLen ;
+		Integer mapCount;
 		String str = new  String ();
 		//System.out.printf("Running Thread no %d \n", threadNum);
 			i=0;
@@ -100,12 +131,14 @@ public ArrayList  <Character > specials;
 						
 						if (si < ei+1){
 							str = str.substring(si, ei+1);
-							if(map.get(str) !=null) {
-								map.put(str, map.get(str)+1);
+							mapCount= map.get(str);
+							if(mapCount !=null) {
+								map.put(str, mapCount+1);
 							}else{
 								map.put(str, 1);
 							}
 						}
+						
 					}
 					str = "";
 				}else{
@@ -141,14 +174,17 @@ public ArrayList  <Character > specials;
 					ei--;
 				}
 			
+				
 				if (si < ei+1){
 					str = str.substring(si, ei+1);
-				if(map.get(str) !=null) {
-					map.put(str, map.get(str)+1);
-				}else{
-					map.put(str, 1);
+					mapCount= map.get(str);
+					if(mapCount !=null) {
+						map.put(str, mapCount+1);
+					}else{
+						map.put(str, 1);
+					}
 				}
-				}
+				
 			}
 		//System.out.printf("Done Running Thread no %d \n", threadNum);
 	}
@@ -177,7 +213,7 @@ public ArrayList  <Character > specials;
 		
 		public static void main(String[] args) {
 			// TODO Auto-generated method stub
-			int numThreads = 7 ; 
+			int numThreads =2; 
 			InputStream inputStream ;
 			BufferedReader reader ;
 			String inpFName = "/home/mangesh/mt/cr10m";//"/home/mangesh/a.out" ;//= args[0]; // "/home/mangesh/mt/cont.xml";
@@ -187,17 +223,55 @@ public ArrayList  <Character > specials;
 			long start,stop;
 			long fileSize;
 			long BLOCK_SIZE = 4096 ;
-			char []buf ;
+			//char []buf ;
 			int fileMode = 1 ; 
 			int idx = 0;
 			int argsLen = 0 ;
 			boolean isFirst = true ;
 			boolean isSecond= true ;
+			long MAPSIZE_THRESHOLD = (long) (1.0 * MILLION);
+			int threadToMap[];
+			List <ValuePair> vpList = new ArrayList<ValuePair>();
+			ValuePair vp; 
 			//int seps[]; 
+			/*
 			
+			
+			vp = new ValuePair();
+			vp.key = "Rupesh";
+			vp.value = 27;
+			vpList.add(vp);
+
+			
+			vp = new ValuePair();
+			vp.key = "Thakare";
+			vp.value = 21;
+			vpList.add(vp);
+			
+			vp = new ValuePair();
+			vp.key = "Manegsh";
+			vp.value = 23;
+			vpList.add(vp);
+
+
+			System.out.println("Before sorting");
+			for(ValuePair y:vpList){
+				System.out.printf("%s %d\n", y.key,y.value);
+			}
+			Collections.sort(vpList);
+			System.out.println("After sorting");
+			for(ValuePair y:vpList){
+				System.out.printf("%s %d\n", y.key,y.value);
+			}
+			if(true) {
+				return ;
+			}
+			*/
 			ArrayList  <Character > separators = new  ArrayList <Character> ();
 			ArrayList  <Character > specials = new  ArrayList <Character> ();
 			String str =  new String ();
+			threadToMap = new int [16];
+			
 			//Map<String,Integer> map = new HashMap<String,Integer>();
 			//---------------------------------------------
 			// Get the input arguments here
@@ -276,8 +350,10 @@ public ArrayList  <Character > specials;
 			 System.out.println("Running with number of Threads  : " + numThreads );
 			 System.out.println("Input File :"+ inpFName + "\t Outout File : "+outFName);
 			 start = System.nanoTime();
+			 // Initialisation 
 			 findMap m_node[] = new findMap[8];
-			 wcInfo mapNode[] = new wcInfo[8];
+			 wcInfo mapNode[] = new wcInfo[1024];
+			 threadBuf tBuf[] = new threadBuf[8];
 
 			 //= new findMap(1);
 			// fileSize = java.io.File.
@@ -294,17 +370,22 @@ public ArrayList  <Character > specials;
 			
 			BLOCK_SIZE = (long) (fileSize / numThreads); 
 			BLOCK_SIZE = (long) (BLOCK_SIZE > MILLION ? MILLION : BLOCK_SIZE); 
-			buf =  new char[(int) (BLOCK_SIZE+1000)] ; // [4000];
+			//buf =  new char[(int) (BLOCK_SIZE+1000)] ; // [4000];
 			//inputStream.available()	;
 			int offset = 0;
 			int len ;
 			int absTnum = 0;
-			
+			int mapIdx = 0 ; 
 			
 			for(tNum = 0 ; tNum < numThreads;tNum++){
+				
 				mapNode[tNum] = new wcInfo();
-				mapNode[tNum].buf =  new char[(int) (BLOCK_SIZE+1000)] ;
+				tBuf[tNum] = new threadBuf();
+				//mapNode[tNum].buf =  new char[(int) (BLOCK_SIZE+1000)] ;
+				tBuf[tNum].buf =  new char[(int) (BLOCK_SIZE+1000)] ;
 				m_node[tNum] = new findMap(1);
+				mapNode[tNum].mapIdx = mapIdx;
+				
 				for (Character sp : separators ){
 					m_node[tNum] .separators.add(sp);
 				}
@@ -312,16 +393,31 @@ public ArrayList  <Character > specials;
 					m_node[tNum].specials.add(sp);
 				}
 				//m_node[tNum].threadNum = tNum; 
+				mapIdx++;
 			}
 			System.out.printf("Using Block size = %d \n",BLOCK_SIZE);
 			int vNum;
 			long progress = 0;
+			Mutex m = null ;
+			m = new Mutex();
 			tNum = 0 ; 
 			try { 
+								
 			while(true) {
 				if(fileMode==1){ // Single filemode
-					System.out.printf("Processed %d , Progress = %2.2f \n", progress,(float)((float) progress * 100)/fileSize);
-					if((len = reader.read (mapNode[tNum].buf,offset,(int)BLOCK_SIZE)) <= 0) {
+					
+					stop = System.nanoTime();
+					//d = new Date(stop/1000000);
+					System.out.print( (stop -start) / BILLION ); 
+					System.out.printf(" Processed %d , Progress = %2.2f Thread = %d mapIdx = %d mapSize = %d \n", 
+							progress,(float)((float) progress * 100)/fileSize,tNum, mapIdx, mapNode[mapNode[tNum].mapIdx].map.size());
+					//System.out.printf(" Processed %d , Progress = %2.2f Thread = %d \n", 
+					//				progress,(float)((float) progress * 100)/fileSize,tNum);
+					 
+				//	if((len = reader.read (mapNode[tNum].buf,offset,(int)BLOCK_SIZE)) <= 0) {
+					m.lock();
+					if((len = reader.read (tBuf[tNum].buf,offset,(int)BLOCK_SIZE)) <= 0) {
+						
 						for(vNum = 0 ; vNum < numThreads && vNum < absTnum;vNum++){
 							//System.out.printf("Waiting for last thread num = %d absTnum = %d \n",vNum,absTnum);
 							m_node[vNum].join();
@@ -329,13 +425,13 @@ public ArrayList  <Character > specials;
 
 						break;
 					}
-					 
+					m.unlock(); 
 					//System.out.printf("Reading for thread %d \n",tNum);
 					if(len == BLOCK_SIZE) {
 						//ch = new Character (c);
 						int ec = 0;
 						while(Character.isWhitespace(c = (char)reader.read()) == false ) {
-							buf[len] = c ; 
+							tBuf[tNum].buf[len] = c ; 
 							len++;
 							ec++;
 							if (ec > 1000) {
@@ -355,10 +451,43 @@ public ArrayList  <Character > specials;
 					m_node[tNum].specials = mapNode[tNum].specials ;
 					m_node[tNum].separators  = mapNode[tNum].separators  ;
 					//m_node[tNum].buf = buf.clone();
-					m_node[tNum].buf = mapNode[tNum].buf;
+					//m_node[tNum].buf = mapNode[tNum].buf;
+					m_node[tNum].buf = tBuf[tNum].buf;
 					m_node[tNum].setOffsetLen(0, len);
-					m_node[tNum].map = mapNode[tNum].map;
+				
+					if(mapNode[mapNode[tNum].mapIdx].map.size()> MAPSIZE_THRESHOLD) {
 					
+						// for time being 
+						
+						// Drive this to array sort and save  
+						for(String s1 : mapNode[mapNode[tNum].mapIdx].map.keySet())	 {
+							vp = new ValuePair(s1,mapNode[mapNode[tNum].mapIdx].map.get(s1));
+							vpList.add(vp);
+						}
+						Collections.sort(vpList);
+						// Write to a file
+						String imdFileName = "imdFile".concat(((Integer)mapNode[tNum].mapIdx).toString());
+						PrintWriter fstream = new PrintWriter(imdFileName);
+						//fstream.printf(format, args)
+						//BufferedWriter out  = new BufferedWriter(fstream); 
+						for(ValuePair y : vpList) { 
+							fstream.printf("%s %d \n",y.key,y.value);
+						}
+						
+						fstream.close ();
+						mapNode[mapNode[tNum].mapIdx].map.clear();
+						vpList.clear();
+						System.out.printf("Writing done to file %s \n",imdFileName);
+						mapNode[mapIdx] = new wcInfo();
+					
+						mapNode[tNum].mapIdx = mapIdx;
+						//mapNode[tNum].mapIdx = tNum;
+						mapIdx++;
+						
+					}
+					
+					m_node[tNum].map = mapNode[mapNode[tNum].mapIdx].map;
+					//mapNode[tNum].mapIdx = tNum;
 					m_node[tNum].threadNum = tNum;
 		
 				}
@@ -399,12 +528,12 @@ public ArrayList  <Character > specials;
 			}
 
 			
-			for(tNum  = 1 ; tNum < numThreads && tNum < absTnum;tNum++){
-				for(String k : m_node[tNum].map.keySet()){
-					if(m_node[0].map.get(k) !=null) {
-						m_node[0].map.put(k, m_node[0].map.get(k)+m_node[tNum].map.get(k));
+			for(tNum  = 1 ; tNum < mapIdx && tNum < absTnum;tNum++){
+				for(String k : mapNode[tNum].map.keySet()){
+					if(mapNode[0].map.get(k) !=null) {
+						mapNode[0].map.put(k, mapNode[0].map.get(k)+mapNode[tNum].map.get(k));
 					}else{
-						m_node[0].map.put(k, 1);
+						mapNode[0].map.put(k, 1);
 					}
 				}
 			}
@@ -413,9 +542,10 @@ public ArrayList  <Character > specials;
 				PrintWriter fstream = new PrintWriter(outFName);
 				//fstream.printf(format, args)
 				//BufferedWriter out  = new BufferedWriter(fstream); 
-				for(String k : m_node[0].map.keySet()) { 
-					fstream.printf("%s %d \n",k,m_node[0].map.get(k));
+				for(String k : mapNode[0].map.keySet()) { 
+					fstream.printf("%s %d \n",k,mapNode[0].map.get(k));
 				}
+				
 				fstream.close ();
 			} catch (IOException e) {
 				// TODO Auto-generated catch block
