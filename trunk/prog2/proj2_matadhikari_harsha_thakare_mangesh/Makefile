@@ -4,12 +4,13 @@ HADOOP_HOME=../hadoop/hadoop-${HADOOP_VERSION}
 JAVA_CLASS_FILES= WordCountJ.class 
 MAPREDUCE_CLASS_FILES=WordCountMR.class
 CLASSPATH=${HADOOP_HOME}/hadoop-core-${HADOOP_VERSION}.jar
+OUTPUT_FOLDER=output
 
 WordCountJ:${JAVA_CLASS_FILES}
-	jar cvf $@.jar $(addprefix $(SRC_DIR)/, $@*.class)
+	jar cvf ${OUTPUT_FOLDER}/$@.jar $(addprefix $(SRC_DIR)/, $@*.class)
 
 WordCountMR:${MAPREDUCE_CLASS_FILES}
-	jar cvf $@.jar  $(addprefix $(SRC_DIR)/, $@*.class)
+	jar cvf ${OUTPUT_FOLDER}/$@.jar  $(addprefix $(SRC_DIR)/, $@*.class)
 
 all:WordCountJ WordCountMR
 
