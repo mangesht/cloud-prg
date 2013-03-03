@@ -109,7 +109,9 @@ public ArrayList  <Character > specials;
 					if (str.matches("") == false){
 						//System.out.printf("%s \t",str );
 						si = 0 ;
+						System.out.println("\nstr="+str);
 						strLen = str.length() ;
+						System.out.println("\nstr="+str + "strlen = "+strLen);
 						while(si<strLen-1){
 							if (specials.contains(str.charAt(si))) {
 								// Continue the loop
@@ -127,10 +129,11 @@ public ArrayList  <Character > specials;
 							}
 							ei--;
 						}
-                       // System.out.printf("si = %d ei = %d \n",si,ei);
+                        System.out.printf("\tsi = %d ei = %d \n",si,ei);
 						
 						if (si < ei+1){
 							str = str.substring(si, ei+1);
+							System.out.println("\tafter str="+str);
 							mapCount= map.get(str);
 							if(mapCount !=null) {
 								map.put(str, mapCount+1);
@@ -156,6 +159,7 @@ public ArrayList  <Character > specials;
 				// Loop for removing leading and laging special chars
 				si = 0 ;
 				strLen = str.length() ;
+				System.out.println("\nstr="+str);
 				while(si<strLen-1){
 					if (specials.contains(str.charAt(si))) {
 						// Continue the loop
@@ -177,6 +181,7 @@ public ArrayList  <Character > specials;
 				
 				if (si < ei+1){
 					str = str.substring(si, ei+1);
+					System.out.println("\tafter str="+str);
 					mapCount= map.get(str);
 					if(mapCount !=null) {
 						map.put(str, mapCount+1);
@@ -381,7 +386,7 @@ public ArrayList  <Character > specials;
 		}
 		public static void main(String[] args) {
 			// TODO Auto-generated method stub
-			int numThreads =2; 
+			int numThreads =1; 
 			InputStream inputStream ;
 			BufferedReader reader ;
 			String inpFName = "/home/mangesh/mt/cr1k";//"/home/mangesh/a.out" ;//= args[0]; // "/home/mangesh/mt/cont.xml";
@@ -397,7 +402,7 @@ public ArrayList  <Character > specials;
 			int argsLen = 0 ;
 			boolean isFirst = true ;
 			boolean isSecond= true ;
-			long MAPSIZE_THRESHOLD = (long) (1.0 * MILLION);
+			
 			int threadToMap[];
 			
 			ValuePair vp; 
@@ -512,9 +517,10 @@ public ArrayList  <Character > specials;
 				idx++;
 			}
 		    if(isFirst || isSecond){
-			    displayHelp();
-                return;
-			}	
+			    //displayHelp();
+                //return;
+			}
+		    long MAPSIZE_THRESHOLD = (long) (1.0 * MILLION * 2 / numThreads);
 			 System.out.println("Running with number of Threads  : " + numThreads );
 			 System.out.println("Input File :"+ inpFName + "\t Outout File : "+outFName);
 			 start = System.nanoTime();
@@ -555,10 +561,10 @@ public ArrayList  <Character > specials;
 				mapNode[tNum].mapIdx = mapIdx;
 				
 				for (Character sp : separators ){
-					m_node[tNum] .separators.add(sp);
+					mapNode[tNum] .separators.add(sp);
 				}
 				for (Character sp : specials ){
-					m_node[tNum].specials.add(sp);
+					mapNode[tNum].specials.add(sp);
 				}
 				//m_node[tNum].threadNum = tNum; 
 				mapIdx++;
