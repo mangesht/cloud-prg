@@ -511,10 +511,10 @@ public ArrayList  <Character > specials;
 				}
 				idx++;
 			}
-		    //if(isFirst || isSecond){
-			//    displayHelp();
-            //    return;
-		//	}	
+		    if(isFirst || isSecond){
+			    displayHelp();
+                return;
+			}	
 			 System.out.println("Running with number of Threads  : " + numThreads );
 			 System.out.println("Input File :"+ inpFName + "\t Outout File : "+outFName);
 			 start = System.nanoTime();
