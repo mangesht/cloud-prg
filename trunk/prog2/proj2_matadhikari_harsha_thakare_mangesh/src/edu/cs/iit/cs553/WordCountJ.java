@@ -193,9 +193,12 @@ public ArrayList  <Character > specials;
 	public class WordCountJ {
 		/**
 		 * @param args
+		 * 
 		 */
+		static List <ValuePair> vpList = new ArrayList<ValuePair>();
 		static long  BILLION = 1000000000;
 		static long  MILLION = 1000000;
+		
 		public static void displayHelp(){
 			System.out.println("Usuage: java wordCount [-h]  [-nt numThreads] [-fm s/m fileMode] -w charValue -s charValue inputFile outputFile");
 			System.out.println("\t -h Displays Help");
@@ -211,12 +214,177 @@ public ArrayList  <Character > specials;
 			
 		}
 		
+		public static void outputMapToFile(Map<String,Integer> map, int idx){
+			ValuePair vp;
+		
+			for(String s1 : map.keySet())	 {
+				vp = new ValuePair(s1,map.get(s1));
+				vpList.add(vp);
+			}
+			Collections.sort(vpList);
+			// Write to a file
+			String imdFileName = "imdFile".concat(((Integer)idx).toString());
+			PrintWriter fstream;
+			try {
+				fstream = new PrintWriter(imdFileName);
+		
+			for(ValuePair y : vpList) { 
+				fstream.printf("%s %d \n",y.key,y.value);
+			}
+			
+			fstream.close ();
+			} catch (FileNotFoundException e) {
+			
+				e.printStackTrace();
+			}
+			vpList.clear();
+			System.out.printf("Writing done to file %s \n",imdFileName);
+		}
+		
+		//public static void mergeFiles(int s1,int s2,int o1){
+		public static void mergeFiles(String inpF1Name,String inpF2Name,String outFName){
+			InputStream inputStream1 ;
+			BufferedReader reader1 ;
+			InputStream inputStream2;
+			BufferedReader reader2 ;
+			StringTokenizer stk1;
+			StringTokenizer stk2; 
+			String str1;
+			String str2;
+			String k1;
+			String k2;
+			int v1;
+			int v2;
+			int tkn1;
+			int tkn2;
+			int cmp;
+			//String inpF1Name = "imdFile".concat(((Integer)s1).toString());
+			//String inpF2Name = "imdFile".concat(((Integer)s2).toString());
+			//String outFName = "imdFile".concat(((Integer)o1).toString());
+			System.out.printf("Merging %s and %s to %s\n",inpF1Name,inpF2Name,outFName);
+			PrintWriter fstream;
+			try {
+				inputStream1 = new FileInputStream(inpF1Name);
+				reader1 = new BufferedReader(new InputStreamReader( inputStream1));
+				//StreamTokenizer tokens1 = new StreamTokenizer(reader1);
+				
+				inputStream2 = new FileInputStream(inpF2Name);
+				reader2 = new BufferedReader(new InputStreamReader( inputStream2));
+				//StreamTokenizer tokens2 = new StreamTokenizer(reader2);
+				fstream = new PrintWriter(outFName);
+				
+				str1 = reader1.readLine();
+				str2 = reader2.readLine();
+				
+				//tkn1 = tokens1.nextToken();
+				//tkn2= tokens2.nextToken();
+				
+				
+				while(true){
+					
+					if (str1 == null) { 
+						// Write rest of file 2
+						while(str2 != null){
+							stk2 = new StringTokenizer(str2," ");
+							k2 = stk2.nextToken();
+							v2 = Integer.parseInt(stk2.nextToken());
+							fstream.printf("%s %d\n",k2,v2);
+							str2 = reader2.readLine();
+						}
+						break;
+					}
+					if(str2 == null){
+						while(str1!= null){
+						   stk1 = new StringTokenizer(str1," ");
+						   k1 = stk1.nextToken();
+						   v1 = Integer.parseInt(stk1.nextToken());
+						   fstream.printf("%s %d\n",k1,v1);
+						   str1 = reader1.readLine();
+						}
+						break;
+					}
+					stk1 = new StringTokenizer(str1," ");
+					k1 = stk1.nextToken();
+					v1 = Integer.parseInt(stk1.nextToken());
+					
+					stk2 = new StringTokenizer(str2," ");
+					k2 = stk2.nextToken();
+					v2 = Integer.parseInt(stk2.nextToken());
+					cmp = k1.compareTo(k2) ; 
+					if(cmp<0){ 
+						fstream.printf("%s %d\n",k1,v1);
+						str1 = reader1.readLine();
+					}else if(cmp>0){
+						fstream.printf("%s %d\n",k2,v2);
+						str2 = reader2.readLine();
+					}else{
+						fstream.printf("%s %d\n",k2,v2+v1);
+						str1 = reader1.readLine();
+						str2 = reader2.readLine();
+					}
+					/*
+					if (tkn1 == StreamTokenizer.TT_EOF) {
+						// Write rest of file 2
+						while(tkn2 != StreamTokenizer.TT_EOF){
+							fstream.printf("%s ",tokens2.sval);
+							tkn2 = tokens2.nextToken();
+							fstream.printf("%d\n",tokens2.nval);
+							tkn2 = tokens2.nextToken();
+						}
+						break;
+					}
+					if (tkn2 == StreamTokenizer.TT_EOF) {
+						// Write rest of file 1
+						while(tkn1 != StreamTokenizer.TT_EOF){
+							fstream.printf("%s ",tokens1.sval);
+							tkn1 = tokens1.nextToken();
+							fstream.printf("%d\n",tokens1.nval);
+							tkn1 = tokens1.nextToken();
+						}
+						break;
+					}
+					if(tokens1.sval.compareTo(tokens2.sval)<0){
+						fstream.printf("%s ",tokens1.sval);
+						tkn1 = tokens1.nextToken();
+						fstream.printf("%d\n",(int)tokens1.nval);
+						tkn1 = tokens1.nextToken();
+					}else if (tokens1.sval.compareTo(tokens2.sval)>0) {
+						fstream.printf("%s ",tokens2.sval);
+						tkn2 = tokens2.nextToken();
+						fstream.printf("%d\n",(int)tokens2.nval);
+						tkn2 = tokens2.nextToken();
+					}else{
+						// both are equal
+						fstream.printf("%s ",tokens2.sval);
+						tkn1 = tokens1.nextToken();
+						tkn2 = tokens2.nextToken();
+						fstream.printf("%d\n",(int)(tokens1.nval+tokens2.nval));
+						tkn1 = tokens1.nextToken();
+						tkn2 = tokens2.nextToken();
+					}
+					*/
+				}
+				reader1.close();
+				reader2.close();
+				fstream.close ();
+				fstream = new PrintWriter(inpF1Name);
+				fstream.close ();
+				fstream = new PrintWriter(inpF2Name);
+				fstream.close ();
+			} catch (FileNotFoundException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (IOException e){
+				e.printStackTrace();
+			}
+			
+		}
 		public static void main(String[] args) {
 			// TODO Auto-generated method stub
 			int numThreads =2; 
 			InputStream inputStream ;
 			BufferedReader reader ;
-			String inpFName = "/home/mangesh/mt/cr10m";//"/home/mangesh/a.out" ;//= args[0]; // "/home/mangesh/mt/cont.xml";
+			String inpFName = "/home/mangesh/mt/cr1k";//"/home/mangesh/a.out" ;//= args[0]; // "/home/mangesh/mt/cont.xml";
 			String outFName = "/home/mangesh/mt/b.txt";//= args[1];
 			char  c ='a';
 			int tNum = 0 ;
@@ -231,7 +399,7 @@ public ArrayList  <Character > specials;
 			boolean isSecond= true ;
 			long MAPSIZE_THRESHOLD = (long) (1.0 * MILLION);
 			int threadToMap[];
-			List <ValuePair> vpList = new ArrayList<ValuePair>();
+			
 			ValuePair vp; 
 			//int seps[]; 
 			/*
@@ -421,8 +589,11 @@ public ArrayList  <Character > specials;
 						for(vNum = 0 ; vNum < numThreads && vNum < absTnum;vNum++){
 							//System.out.printf("Waiting for last thread num = %d absTnum = %d \n",vNum,absTnum);
 							m_node[vNum].join();
+							outputMapToFile(mapNode[mapNode[vNum].mapIdx].map,mapNode[vNum].mapIdx);
+							mapNode[mapNode[vNum].mapIdx].map.clear();
 						}
-
+						// Write all the last maps to File 
+						
 						break;
 					}
 					m.unlock(); 
@@ -460,24 +631,10 @@ public ArrayList  <Character > specials;
 						// for time being 
 						
 						// Drive this to array sort and save  
-						for(String s1 : mapNode[mapNode[tNum].mapIdx].map.keySet())	 {
-							vp = new ValuePair(s1,mapNode[mapNode[tNum].mapIdx].map.get(s1));
-							vpList.add(vp);
-						}
-						Collections.sort(vpList);
-						// Write to a file
-						String imdFileName = "imdFile".concat(((Integer)mapNode[tNum].mapIdx).toString());
-						PrintWriter fstream = new PrintWriter(imdFileName);
-						//fstream.printf(format, args)
-						//BufferedWriter out  = new BufferedWriter(fstream); 
-						for(ValuePair y : vpList) { 
-							fstream.printf("%s %d \n",y.key,y.value);
-						}
-						
-						fstream.close ();
+						outputMapToFile(mapNode[mapNode[tNum].mapIdx].map,mapNode[tNum].mapIdx);
 						mapNode[mapNode[tNum].mapIdx].map.clear();
-						vpList.clear();
-						System.out.printf("Writing done to file %s \n",imdFileName);
+						
+						
 						mapNode[mapIdx] = new wcInfo();
 					
 						mapNode[tNum].mapIdx = mapIdx;
@@ -527,7 +684,33 @@ public ArrayList  <Character > specials;
 				e.printStackTrace();
 			}
 
-			
+			// Implement merge sort for merging all the file outputs
+			int numFiles = mapIdx;
+			int i;
+			int level = 0;
+			String src[];
+			String dst[]; 
+			src = new String[mapIdx];
+			dst = new String[mapIdx];
+			for (i = 0;i<mapIdx;i++){
+				src[i] = "imdFile".concat(((Integer)i).toString());
+			}
+			while(numFiles > 1) {
+				for(i=0;i<numFiles-1;i=i+2){
+					//mergeFiles(mapIdx*level+i,mapIdx*level+i+1,mapIdx*(level+1)+(i/2));
+					dst[i/2] = "imdFile".concat(((Integer)(mapIdx*(level+1)+(i/2))).toString());
+					if(numFiles == 2 ) {
+						mergeFiles(src[i],src[i+1],outFName);
+					}else{
+						mergeFiles(src[i],src[i+1],dst[i/2]);
+					}
+				}
+				dst[numFiles/2] = src[numFiles-1];
+				numFiles = (numFiles + 1 )/2 ;
+				src = dst.clone();
+				level++;
+			}
+			/*
 			for(tNum  = 1 ; tNum < mapIdx && tNum < absTnum;tNum++){
 				for(String k : mapNode[tNum].map.keySet()){
 					if(mapNode[0].map.get(k) !=null) {
@@ -537,7 +720,10 @@ public ArrayList  <Character > specials;
 					}
 				}
 			}
+			*/
+			
 			stop = System.nanoTime();
+			/*
 			try {
 				PrintWriter fstream = new PrintWriter(outFName);
 				//fstream.printf(format, args)
@@ -551,7 +737,7 @@ public ArrayList  <Character > specials;
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
-			
+			*/
 			//System.out.printf("key = %s Val = %d \n",k,map.get(k));
 			//System.out.printf("key = %s Val = %d \n","thakare",map.get("thakare"));
 			
