@@ -1,15 +1,8 @@
 package src.edu.cs.iit.cs553;
-import javax.naming.Context; 
-
-import sun.awt.Mutex;
-
 import java.util.*;
 import java.io.*;
 import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.List;
-import java.util.Date ;
-
 
 class ValuePair implements Comparable <ValuePair>{
 	public String key; 
@@ -21,7 +14,7 @@ class ValuePair implements Comparable <ValuePair>{
 		this.key = s1;
 		this.value = v1 ; 
 	}
-	@Override
+//	@Override
 	public int compareTo(ValuePair arg0) {
 		
 		//
@@ -109,10 +102,11 @@ public ArrayList  <Character > specials;
 					if (str.matches("") == false){
 						//System.out.printf("%s \t",str );
 						si = 0 ;
-						System.out.println("\nstr="+str);
+						//System.out.println("\nstr="+str);
 						strLen = str.length() ;
-						System.out.println("\nstr="+str + "strlen = "+strLen);
+						//System.out.println("\nstr="+str + "strlen = "+strLen);
 						while(si<strLen-1){
+							
 							if (specials.contains(str.charAt(si))) {
 								// Continue the loop
 							} else {
@@ -129,11 +123,11 @@ public ArrayList  <Character > specials;
 							}
 							ei--;
 						}
-                        System.out.printf("\tsi = %d ei = %d \n",si,ei);
+                        //System.out.printf("\tsi = %d ei = %d \n",si,ei);
 						
 						if (si < ei+1){
 							str = str.substring(si, ei+1);
-							System.out.println("\tafter str="+str);
+							//System.out.println("\tafter str="+str);
 							mapCount= map.get(str);
 							if(mapCount !=null) {
 								map.put(str, mapCount+1);
@@ -159,7 +153,7 @@ public ArrayList  <Character > specials;
 				// Loop for removing leading and laging special chars
 				si = 0 ;
 				strLen = str.length() ;
-				System.out.println("\nstr="+str);
+				//System.out.println("\nstr="+str);
 				while(si<strLen-1){
 					if (specials.contains(str.charAt(si))) {
 						// Continue the loop
@@ -181,7 +175,7 @@ public ArrayList  <Character > specials;
 				
 				if (si < ei+1){
 					str = str.substring(si, ei+1);
-					System.out.println("\tafter str="+str);
+					//System.out.println("\tafter str="+str);
 					mapCount= map.get(str);
 					if(mapCount !=null) {
 						map.put(str, mapCount+1);
@@ -260,8 +254,6 @@ public ArrayList  <Character > specials;
 			String k2;
 			int v1;
 			int v2;
-			int tkn1;
-			int tkn2;
 			int cmp;
 			//String inpF1Name = "imdFile".concat(((Integer)s1).toString());
 			//String inpF2Name = "imdFile".concat(((Integer)s2).toString());
@@ -403,9 +395,6 @@ public ArrayList  <Character > specials;
 			boolean isFirst = true ;
 			boolean isSecond= true ;
 			
-			int threadToMap[];
-			
-			ValuePair vp; 
 			//int seps[]; 
 			/*
 			
@@ -443,7 +432,6 @@ public ArrayList  <Character > specials;
 			ArrayList  <Character > separators = new  ArrayList <Character> ();
 			ArrayList  <Character > specials = new  ArrayList <Character> ();
 			String str =  new String ();
-			threadToMap = new int [16];
 			
 			//Map<String,Integer> map = new HashMap<String,Integer>();
 			//---------------------------------------------
@@ -526,7 +514,7 @@ public ArrayList  <Character > specials;
 			 start = System.nanoTime();
 			 // Initialisation 
 			 findMap m_node[] = new findMap[8];
-			 wcInfo mapNode[] = new wcInfo[1024];
+			 wcInfo mapNode[] = new wcInfo[8096];
 			 threadBuf tBuf[] = new threadBuf[8];
 
 			 //= new findMap(1);
@@ -572,8 +560,6 @@ public ArrayList  <Character > specials;
 			System.out.printf("Using Block size = %d \n",BLOCK_SIZE);
 			int vNum;
 			long progress = 0;
-			Mutex m = null ;
-			m = new Mutex();
 			tNum = 0 ; 
 			try { 
 								
@@ -589,7 +575,6 @@ public ArrayList  <Character > specials;
 					//				progress,(float)((float) progress * 100)/fileSize,tNum);
 					 
 				//	if((len = reader.read (mapNode[tNum].buf,offset,(int)BLOCK_SIZE)) <= 0) {
-					m.lock();
 					if((len = reader.read (tBuf[tNum].buf,offset,(int)BLOCK_SIZE)) <= 0) {
 						
 						for(vNum = 0 ; vNum < numThreads && vNum < absTnum;vNum++){
@@ -602,7 +587,6 @@ public ArrayList  <Character > specials;
 						
 						break;
 					}
-					m.unlock(); 
 					//System.out.printf("Reading for thread %d \n",tNum);
 					if(len == BLOCK_SIZE) {
 						//ch = new Character (c);
