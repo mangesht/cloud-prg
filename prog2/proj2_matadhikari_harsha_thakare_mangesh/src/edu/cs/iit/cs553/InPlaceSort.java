@@ -96,7 +96,7 @@ class LineReader{
 		char c ;
 		for(;rEnd<len;rEnd++){
 			//if(isNewLine(c=buf[rEnd])){
-			if(((c = buf[rEnd]) != '\n')){
+			if(((c = buf[rEnd]) == '\n')){
 				// This is last Char
 				rEnd++;
 				/*
