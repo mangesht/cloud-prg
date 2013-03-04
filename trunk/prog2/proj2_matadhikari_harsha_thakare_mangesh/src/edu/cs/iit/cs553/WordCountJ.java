@@ -455,9 +455,9 @@ public ArrayList  <Character > specials;
 		//	args[1] = "45";
 			specials.add((char)34); // Double quote 
 			specials.add((char)63); // ? Question mark
-			specials.add((char)61); // <
-			//specials.add((char)62); // = 
-			specials.add((char)63); // > 
+			specials.add((char)60); // <
+			//specials.add((char)61); // = 
+			specials.add((char)62); // > 
 			specials.add((char)46); // .
 			specials.add((char)59); // ;
 			while(idx <argsLen ) {
