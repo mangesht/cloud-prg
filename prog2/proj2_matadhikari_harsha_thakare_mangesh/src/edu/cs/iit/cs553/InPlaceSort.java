@@ -65,11 +65,12 @@ class LineReader{
 						char c ;
 						progress = progress + (long) len;
 						// Get remaing chars in a line
-						while ((progress <= fileSize) && (nwGot == false) ) {
+						while ((progress < fileSize) && (nwGot == false) ) {
 							//if(isNewLine(c = (char)reader.read()) == false){
 							if(((c = (char)reader.read()) != '\n')){
 								buf[len] = c ; 
 							}else{
+								buf[len] = c ;
 								nwGot = true;
 								/*
 								if (c == '\r') {
@@ -98,6 +99,8 @@ class LineReader{
 			//if(isNewLine(c=buf[rEnd])){
 			if(((c = buf[rEnd]) == '\n')){
 				// This is last Char
+				ch = new Character (c);
+				str = str.concat(ch.toString());
 				rEnd++;
 				/*
 				if(isNewLine(c=buf[rEnd])) {
@@ -217,6 +220,7 @@ public class InPlaceSort{
 		int tkn1;
 		int tkn2;
 		int cmp;
+		long start,stop;
 		//String inpF1Name = "imdFile".concat(((Integer)s1).toString());
 		//String inpF2Name = "imdFile".concat(((Integer)s2).toString());
 		//String outFName = "imdFile".concat(((Integer)o1).toString());
@@ -234,9 +238,9 @@ public class InPlaceSort{
 			//StreamTokenizer tokens2 = new StreamTokenizer(reader2);
 			fstream = new PrintWriter(outFName);
 			FileWriter writer = new FileWriter(outFName);
-			BufferedWriter bwr = new BufferedWriter(writer);
+			BufferedWriter bWriter = new BufferedWriter(writer);
 
-			BufWriter bWriter = new BufWriter(bwr,BLOCK_SIZE); 
+			//BufWriter bWriter = new BufWriter(bwr,BLOCK_SIZE); 
 			reader1 = new LineReader(rdr1,BLOCK_SIZE);
 			reader2 = new LineReader(rdr2,BLOCK_SIZE);
 			fileSize = ((FileInputStream) inputStream1).getChannel().size();
@@ -250,12 +254,13 @@ public class InPlaceSort{
 			//tkn1 = tokens1.nextToken();
 			//tkn2= tokens2.nextToken();
 
-
+			start = System.nanoTime();
 			while(true){
 				ln++;
 				//  	System.out.println(ln + " " + str1);
 				//  	System.out.println(ln + " " + str2);
 				//System.out.println(ln);
+				
 				if (str1 == null) { 
 					// Write rest of file 2
 					while(str2 != null){
@@ -296,7 +301,8 @@ public class InPlaceSort{
 			fstream = new PrintWriter(inpF2Name);
 			fstream.close ();
 			bWriter.close();
-			writeTime = writeTime + bWriter.diskTime ;
+			stop = System.nanoTime();
+			writeTime = writeTime + (stop - start) - reader1.diskTime  - reader2.diskTime ;
 
 		} catch (FileNotFoundException e) {
 			// TODO Auto-generated catch block
@@ -324,7 +330,7 @@ public class InPlaceSort{
 		long fileSize;
 		long sortTime;
 		int numFiles ;
-		String inpFName = "C:\\setup\\s1m.txt";//"C:\\personal\\IIT\\cs553\\prog2\\log3";//"/home/mangesh/a.out" ;//= args[0]; // "/home/mangesh/mt/cont.xml";
+		String inpFName = "C:\\setup\\s100m.txt";//"C:\\personal\\IIT\\cs553\\prog2\\log3";//"/home/mangesh/a.out" ;//= args[0]; // "/home/mangesh/mt/cont.xml";
 		String outFName = "C:\\personal\\IIT\\cs553\\prog2\\s_100m_sorted.txt";//"C:\\personal\\IIT\\cs553\\prog2\\log3_sorted.txt";//= args[1];
 		BLOCK_SIZE = 10000000;
 		rEnd = 0 ; 
@@ -397,21 +403,24 @@ public class InPlaceSort{
 				strList.add(str);
 				rl++;
 				if(rl >= numEntries){
-					// System.out.printf("started sorting \n");
+					 System.out.printf("started sorting \n");
 					sort_start = System.nanoTime();
 					Collections.sort(strList);
 					sort_stop = System.nanoTime();
+					System.out.printf("Done sorting \n");
 					sortTime = sortTime + (sort_stop - sort_start);
 					wfName = "ipsFile".concat(fidx.toString());
 					fidx++;
 					FileWriter writer = new FileWriter(wfName);
-					BufferedWriter bWr = new BufferedWriter(writer);
-					BufWriter bWriter = new BufWriter(bWr,BLOCK_SIZE); 
+					BufferedWriter bWriter = new BufferedWriter(writer);
+					//BufWriter bWriter = new BufWriter(bWr,BLOCK_SIZE);
+					sort_start = System.nanoTime();
 					for(String s:strList){
 						bWriter.write(s);
 					}
 					bWriter.close();
-					writeTime = writeTime + bWriter.diskTime ;
+					sort_stop = System.nanoTime();
+					writeTime = writeTime + (sort_stop - sort_start);;
 					strList.clear();
 					rl =0;
 				}
@@ -426,6 +435,7 @@ public class InPlaceSort{
 			sort_start = System.nanoTime();
 			Collections.sort(strList);
 			sort_stop = System.nanoTime();
+			System.out.printf("Done sorting \n");
 			sortTime = sortTime + (sort_stop - sort_start);
 			if (fidx == 0 ){
 				wfName = outFName; 
@@ -434,13 +444,16 @@ public class InPlaceSort{
 			}
 			fidx++;
 			FileWriter writer = new FileWriter(wfName);
-			BufferedWriter bWr = new BufferedWriter(writer);
-			BufWriter bWriter = new BufWriter(bWr,BLOCK_SIZE); 
+			BufferedWriter bWriter = new BufferedWriter(writer);
+			//BufWriter bWriter = new BufWriter(bWr,BLOCK_SIZE);
+			sort_start = System.nanoTime();
 			for(String s:strList){
 				bWriter.write(s);
 			}
 			bWriter.close();
-			writeTime = writeTime + bWriter.diskTime ;
+			sort_stop = System.nanoTime();
+			writeTime = writeTime + (sort_stop - sort_start);;
+			
 			strList.clear();
 			rl =0;
 
@@ -483,4 +496,6 @@ public class InPlaceSort{
 	}
 
 }
+
+
 
