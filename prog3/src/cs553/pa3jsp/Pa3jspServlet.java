@@ -53,16 +53,7 @@ public class Pa3jspServlet extends HttpServlet {
         if (user != null) {
     
         	boolean isMultipart = ServletFileUpload.isMultipartContent(req);
-            resp.setContentType("text/html");
-            resp.getWriter().println("<div id=\"logout\">");
-            resp.getWriter().println("<a href=\"<%= userService.createLogoutURL(request.getRequestURI()) %>\">sign out</a>.</p>");
-            resp.getWriter().println("</div>");
-            
-            resp.getWriter().println("<div id=\"welcome\">");
-            resp.getWriter().println("<h1> Hello " + user.getNickname() + "</h1>");
-            resp.getWriter().println("</div>");
-            
-            resp.getWriter().println("<div id=\"ops\">");
+ 
         	try {
 	            if (isMultipart == true) {
 	            	performInsert(user, req,resp);
@@ -74,7 +65,7 @@ public class Pa3jspServlet extends HttpServlet {
 	                } else if (ops.equals("check")) {
 	                	performCheck(user, req,resp);
 	                } else if (ops.equals("find")) {
-	                	performCheck(user, req,resp);
+	                	performFind(user, req,resp);
 	                } else if (ops.equals("remove")) {
 	                	performRemove(user, req,resp);
 	                }
@@ -83,14 +74,35 @@ public class Pa3jspServlet extends HttpServlet {
         		throw new ServletException("Cannot parse multipart request: " + e.getMessage());
         	}
             	    
-            resp.getWriter().println("</div>");
-       	    resp.getWriter().println("<div id=\"nav\">");
-            resp.getWriter().println("<a href=\"/pa3.jsp\">Go Back</a>.</p>");
-            resp.getWriter().println("</div>");		
+	
         } else {
             resp.sendRedirect(userService.createLoginURL(req.getRequestURI()));
         }
 
+	}
+	
+	public void outputHeader(User user,
+            		         HttpServletResponse resp) 
+	        		 throws ServletException, IOException {
+        resp.setContentType("text/html");
+        resp.getWriter().println("<div id=\"logout\">");
+        resp.getWriter().println("<a href=\"<%= userService.createLogoutURL(request.getRequestURI()) %>\">sign out</a>.</p>");
+        resp.getWriter().println("</div>");
+        
+        resp.getWriter().println("<div id=\"welcome\">");
+        resp.getWriter().println("<h1> Hello " + user.getNickname() + "</h1>");
+        resp.getWriter().println("</div>");
+        
+        resp.getWriter().println("<div id=\"ops\">");		
+	}
+	
+	public void outputFooter(User user,
+	         HttpServletResponse resp) 
+	        		 throws ServletException, IOException {
+        resp.getWriter().println("</div>");
+   	    resp.getWriter().println("<div id=\"nav\">");
+        resp.getWriter().println("<a href=\"/pa3.jsp\">Go Back</a>.</p>");
+        resp.getWriter().println("</div>");			
 	}
 	
 	public void performListing(User user,
@@ -104,6 +116,7 @@ public class Pa3jspServlet extends HttpServlet {
        	Key k3 = new KeyFactory.Builder("user", user.getNickname()).getKey();  	    
   	    Query q = new Query("fileinfo", k3);
    	    PreparedQuery pq = datastore.prepare(q); 
+   	    outputHeader(user, resp);
         resp.getWriter().println("<i> So you want see the listing of your files "
 						 + " ! Right? Here we go ... </i><br><br>");  
         
@@ -120,7 +133,7 @@ public class Pa3jspServlet extends HttpServlet {
     	    					"</tr>");
    	    }
 	    resp.getWriter().println("</table>");
-   	    
+	    outputFooter(user, resp);
 	}
 
 	public void performFind(User user,
@@ -128,10 +141,57 @@ public class Pa3jspServlet extends HttpServlet {
             HttpServletResponse resp)
           		  throws IOException,
                     ServletException         {
-  	    String ops=req.getParameter("fun");		
-		String filename = req.getParameter("file_name");            		
-    	resp.getWriter().println("<i> ops = " + ops + "</i><br>");
-    	resp.getWriter().println("<i> filename = " + filename + "</i><br>");		
+		int found = 0;
+  	    String ops=req.getParameter("fun");	
+  	    String filename=req.getParameter("file_name");	
+        DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();
+       	Key k1 = new KeyFactory.Builder("user", user.getNickname())
+       						   .addChild("file", filename)
+       						   .getKey();  	    
+       	Key k2 = new KeyFactory.Builder("user", user.getNickname())
+		   .addChild("fileinfo", filename)
+		   .getKey();  	    
+  	    Query q = new Query(k2);
+   	    PreparedQuery pq = datastore.prepare(q); 
+   	    for (Entity result : pq.asIterable()) {  
+   	    	found = 1;
+   	    	String filesize = String.valueOf(
+   	    	    	result.getProperty("file-contentlen"));
+   	    	
+   	    	if (Integer.valueOf(filesize) > 1024*924)	{
+   	    		/* Blobstore retrieval */
+   	    	} else {
+   	    		/* Datastore retieval */
+   	        	Key k3 = new KeyFactory.Builder("user", user.getNickname())
+   			   .addChild("file", filename)
+   			   .getKey();     
+	   	   	    Query qFile = new Query(k3);
+	   	   	    PreparedQuery pqFIle = datastore.prepare(qFile);
+	   	   	    Entity resultFile;   	    		
+
+	   	   	    resultFile = pqFIle.asSingleEntity();
+	   	   	    
+   	        	Blob blob = (Blob) resultFile.getProperty("file-content");
+   		   	    String mimeType = "application/octet-stream";
+   		   	   
+   	        	resp.setContentType(mimeType);
+   	            resp.setContentLength((int) Integer.valueOf(filesize));
+   	            String headerKey = "Content-Disposition";
+   	            String headerValue = String.format("attachment; filename=\"%s\"", filename);
+   	            resp.setHeader(headerKey, headerValue);   	        	
+   	            OutputStream outStream = resp.getOutputStream();
+   	            byte[] buffer = blob.getBytes();
+    	        outStream.write(buffer, 0, Integer.valueOf(filesize));
+   	    	}
+   	    }
+   	    
+   	    if (found == 0) {
+   	   	    outputHeader(user, resp);   	    	
+    	    resp.getWriter().println("<p>Filename = " + filename +
+					                              " Not Found ...</p>");
+    	    outputFooter(user, resp);     	    
+   	    }	
+    
 	}
 	
 	public void performCheck(User user,
@@ -139,10 +199,40 @@ public class Pa3jspServlet extends HttpServlet {
             HttpServletResponse resp)
           		  throws IOException,
                     ServletException         {
-  	    String ops=req.getParameter("fun");		
-		String filename = req.getParameter("file_name");            		
-    	resp.getWriter().println("<i> ops = " + ops + "</i><br>");
-    	resp.getWriter().println("<i> filename = " + filename + "</i><br>");		
+		int found = 0;
+  	    String ops=req.getParameter("fun");	
+  	    String filename=req.getParameter("file_name");	
+        DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();
+   	    outputHeader(user, resp);
+       	Key k1 = new KeyFactory.Builder("user", user.getNickname())
+       						   .addChild("file", filename)
+       						   .getKey();  	    
+       	Key k2 = new KeyFactory.Builder("user", user.getNickname())
+		   .addChild("fileinfo", filename)
+		   .getKey();  	    
+       	
+  	    Query q = new Query(k2);
+   	    PreparedQuery pq = datastore.prepare(q); 
+   	    
+        resp.getWriter().println("<i> So you want to search the file "
+						 + filename + " ! Right? Here we go ... </i><br><br>");  
+   	    for (Entity result : pq.asIterable()) {  
+   	    	found = 1;
+   	    	String filename1 = (String) result.getProperty("file-name");
+   	    	String filesize = String.valueOf(
+   	    	result.getProperty("file-contentlen"));
+   	    	String filestore = (String) result.getProperty("file-store");
+   	    	
+    	    resp.getWriter().println("<p>Filename = " + filename1 +
+    							"</p><p> File Size in Bytes = " + filesize + "</p>" + 
+    							"</p><p> File Store = " + filestore + "</p>");
+   	    }
+   	    
+   	    if (found == 0) {
+    	    resp.getWriter().println("<p>Filename = " + filename +
+					                              " Not Found ...</p>");
+   	    }
+	    outputFooter(user, resp);   	   	    
 	}	
 	
 	public void performRemove(User user,
@@ -162,7 +252,7 @@ public class Pa3jspServlet extends HttpServlet {
        	
   	    Query q = new Query(k2);
    	    PreparedQuery pq = datastore.prepare(q); 
-   	    
+   	    outputHeader(user, resp);   	    
         resp.getWriter().println("<i> So you want to remove the file "
 						 + filename + " ! Right? Here we go ... </i><br><br>");  
    	    for (Entity result : pq.asIterable()) {  
@@ -178,6 +268,7 @@ public class Pa3jspServlet extends HttpServlet {
    	    }
    	    
         datastore.delete(k2);
+	    outputFooter(user, resp);          
 	}	
 	
 	public void performInsert(User user,
@@ -186,6 +277,7 @@ public class Pa3jspServlet extends HttpServlet {
 			                		  throws IOException,
 			                          ServletException         {
     	// Create a factory for disk-based file items
+   	    outputHeader(user, resp);   		
         resp.getWriter().println("<i> So you want do the operation " + "insert" + " ! Right?</i><br>");             	
     	try {
     		ServletFileUpload upload = new ServletFileUpload();
@@ -201,7 +293,7 @@ public class Pa3jspServlet extends HttpServlet {
     	} catch (EntityNotFoundException e) {
     		throw new ServletException("Cannot parse multipart request: " + e.getMessage());
     	}
-    	
+	    outputFooter(user, resp);     	
     } 
 	
 	public void storeInSomeStore(String userName,
