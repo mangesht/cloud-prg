@@ -11,6 +11,8 @@ import javax.servlet.http.HttpServletResponse;
 import com.google.appengine.api.blobstore.BlobKey;
 import com.google.appengine.api.blobstore.BlobstoreService;
 import com.google.appengine.api.blobstore.BlobstoreServiceFactory;
+import com.google.appengine.api.files.FileService;
+
 
 public class Upload extends HttpServlet {
     /**
@@ -21,7 +23,9 @@ public class Upload extends HttpServlet {
 
     public void doPost(HttpServletRequest req, HttpServletResponse res)
         throws ServletException, IOException {
-
+// New Code 
+    	//ServletFileUpload upload = new ServletFileUpload();
+    	
         Map<String, BlobKey> blobs = blobstoreService.getUploadedBlobs(req);
         BlobKey blobKey = blobs.get("myFile");
         
