@@ -26,6 +26,8 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.util.Date;
+
+import com.google.appengine.api.datastore.Blob;
 import com.google.appengine.api.datastore.DatastoreService;
 import com.google.appengine.api.datastore.DatastoreServiceFactory;
 import com.google.appengine.api.datastore.Entity;
@@ -55,43 +57,52 @@ public class Pa3jspServlet extends HttpServlet {
             
             resp.getWriter().println("<div id=\"ops\">");
             if (isMultipart == true) {
-            	// Create a factory for disk-based file items
-                resp.getWriter().println("<i> So you want do the operation " + "insert" + " ! Right?</i><br>");             	
             	try {
-            	
-            		ServletFileUpload upload = new ServletFileUpload();
-            		FileItemIterator iter = upload.getItemIterator(req);
-            		
-            		while (iter.hasNext()) {
-            			FileItemStream item = iter.next();
-            			if (item.isFormField()) continue;
-            				storeInSomeStore(user.getNickname(), item, req,resp);
-            		}
-            	} catch (FileUploadException e) {
-            		throw new ServletException("Cannot parse multipart request: " + e.getMessage());
-            	}catch (EntityNotFoundException e) {
+            	performInsert(user, req,resp);
+            	} catch (IOException e) {
             		throw new ServletException("Cannot parse multipart request: " + e.getMessage());
             	}
-            	
             } else {
-            	
-               String ops=req.getParameter("fun");
-               String filename = req.getParameter("file_name");            		
-               resp.getWriter().println("<i> ops = " + ops + "</i><br>");
-               resp.getWriter().println("<i> filename = " + filename + "</i><br>");
+                	
+                String ops=req.getParameter("fun");
+            	String filename = req.getParameter("file_name");            		
+            	resp.getWriter().println("<i> ops = " + ops + "</i><br>");
+            	resp.getWriter().println("<i> filename = " + filename + "</i><br>");
             }
-            
+            	    
             resp.getWriter().println("</div>");
-
-            resp.getWriter().println("<div id=\"nav\">");
+       	    resp.getWriter().println("<div id=\"nav\">");
             resp.getWriter().println("<a href=\"/pa3.jsp\">Go Back</a>.</p>");
-            resp.getWriter().println("</div>");
-
+            resp.getWriter().println("</div>");		
         } else {
             resp.sendRedirect(userService.createLoginURL(req.getRequestURI()));
         }
 
 	}
+	
+	public void performInsert(User user,
+			                  HttpServletRequest req, 
+			                  HttpServletResponse resp)
+			                		  throws IOException,
+			                          ServletException         {
+    	// Create a factory for disk-based file items
+        resp.getWriter().println("<i> So you want do the operation " + "insert" + " ! Right?</i><br>");             	
+    	try {
+    		ServletFileUpload upload = new ServletFileUpload();
+    		FileItemIterator iter = upload.getItemIterator(req);
+    		
+    		while (iter.hasNext()) {
+    			FileItemStream item = iter.next();
+    			if (item.isFormField()) continue;
+    				storeInSomeStore(user.getNickname(), item, req,resp);
+    		}
+    	} catch (FileUploadException e) {
+    		throw new ServletException("Cannot parse multipart request: " + e.getMessage());
+    	}catch (EntityNotFoundException e) {
+    		throw new ServletException("Cannot parse multipart request: " + e.getMessage());
+    	}
+    	
+    } 
 	
 	public void storeInSomeStore(String userName,
 								 FileItemStream item, 
@@ -127,14 +138,16 @@ public class Pa3jspServlet extends HttpServlet {
 		InputStream stream = item.openStream();
         int len;
         int chunk_count = 0;
-        byte[] buffer = new byte[8192];
+        byte[] buffer = new byte[1024*924];
         int complete_len = 0;
         DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();
         Key k = KeyFactory.createKey("user",  userName);
        	Entity e =  datastore.get(k);
        	Entity  f;
+       	Entity  d;
        	
        	Key k2 = new KeyFactory.Builder("user", userName).addChild("file", item.getName()).getKey();
+       	Key k3 = new KeyFactory.Builder("user", userName).addChild("fileinfo", item.getName()).getKey();
        	
        	try {
        	  f = datastore.get(k2);
@@ -142,8 +155,16 @@ public class Pa3jspServlet extends HttpServlet {
        		  f = new Entity(k2);
           	  resp.getWriter().println("<br><i>new file into datastore</i><br>" );       		  
        	}
+       	
+       	try {
+         	  d = datastore.get(k3);
+        } catch (EntityNotFoundException ex) {
+         		  d = new Entity(k3);
+            	  resp.getWriter().println("<br><i>new fileinfo into datastore</i><br>" );       		  
+        }
+       	
         String str = "";
-        while ((len = stream.read(buffer, 0, buffer.length)) != -1) {
+        while ((len = stream.read(buffer, complete_len, (buffer.length-complete_len))) != -1) {
        	    //str = "";
        	    //String content_property = "file-content-" + String.valueOf(chunk_count);
        	    //String content_len_property = "file-contentlen-" + String.valueOf(chunk_count);
@@ -157,13 +178,18 @@ public class Pa3jspServlet extends HttpServlet {
            	//f.setProperty(content_len_property, len);
        	    complete_len += len;
         	resp.getWriter().println("<br><i>File Chunk " + chunk_count +
-        			" with lenth " + len + 
-        			"Added as property of file entity." + "</i><br>" );
+        			" with lenth " + len + "</i><br>" );
+        			
         	chunk_count++;
        	    
         }	
+        Blob blob = new Blob(buffer);
        	f.setProperty("file-contentlen", complete_len);
+       	f.setProperty("file-content", blob);
+       	d.setProperty("file-contentlen", complete_len);
+       	d.setProperty("file-name", item.getName());
        	datastore.put(f);
-        resp.getWriter().println("<br><i>File Length Added =" + complete_len + "</i><br>" );
+       	datastore.put(d);       	
+        resp.getWriter().println("<br><i>File " +  item.getName() + "Added. Length =" + complete_len + "</i><br>" );
 	}
 }
