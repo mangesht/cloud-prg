@@ -47,18 +47,22 @@ import com.google.appengine.api.datastore.PreparedQuery;
 public class Pa3jspServlet extends HttpServlet {
 	public void doPost(HttpServletRequest req, HttpServletResponse resp)
 			throws ServletException, IOException  {
+
+		fileOpsUsingDataStoreOrCloudStore(req,resp);
+	}
+
+	public void fileOpsUsingDataStoreOrCloudStore(HttpServletRequest req,
+												  HttpServletResponse resp)
+			throws ServletException, IOException  {
         UserService userService = UserServiceFactory.getUserService();
         User user = userService.getCurrentUser();
 
         if (user != null) {
-    
         	boolean isMultipart = ServletFileUpload.isMultipartContent(req);
- 
         	try {
 	            if (isMultipart == true) {
 	            	performInsert(user, req,resp);
 	            } else {
-	                	
 	                String ops=req.getParameter("fun");
 	                if (ops.equals("listing")) {
 	                	performListing(user, req,resp);
@@ -73,24 +77,26 @@ public class Pa3jspServlet extends HttpServlet {
         	} catch (IOException e) {
         		throw new ServletException("Cannot parse multipart request: " + e.getMessage());
         	}
-            	    
-	
         } else {
             resp.sendRedirect(userService.createLoginURL(req.getRequestURI()));
-        }
-
+        }		
 	}
 	
 	public void outputHeader(User user,
             		         HttpServletResponse resp) 
 	        		 throws ServletException, IOException {
         resp.setContentType("text/html");
-        resp.getWriter().println("<div id=\"logout\">");
-        resp.getWriter().println("<a href=\"<%= userService.createLogoutURL(request.getRequestURI()) %>\">sign out</a>.</p>");
+        resp.getWriter().println("<div id=\"welcome\">");
+     	resp.getWriter().println("<h1>PA3 File Storage</h2>");
         resp.getWriter().println("</div>");
         
-        resp.getWriter().println("<div id=\"welcome\">");
-        resp.getWriter().println("<h1> Hello " + user.getNickname() + "</h1>");
+        resp.getWriter().println("<div id=\"Banner\">");
+        resp.getWriter().println("<p> Hello " + user.getNickname() + "</p>");
+			
+        resp.getWriter().println("</div>");
+        
+        resp.getWriter().println("<div id=\"logout\">");
+        resp.getWriter().println("<a href=\"<%= userService.createLogoutURL(request.getRequestURI()) %>\">sign out</a>.</p>");
         resp.getWriter().println("</div>");
         
         resp.getWriter().println("<div id=\"ops\">");		
@@ -157,10 +163,11 @@ public class Pa3jspServlet extends HttpServlet {
    	    	found = 1;
    	    	String filesize = String.valueOf(
    	    	    	result.getProperty("file-contentlen"));
-   	    	
-   	    	if (Integer.valueOf(filesize) > 1024*924)	{
+   	    	String filestore = (String) result.getProperty("file-store");
+   	    	    	   	    	
+   	    	if (filestore.equals("BlobStore"))	{
    	    		/* Blobstore retrieval */
-   	    	} else {
+   	    	} else if (filestore.equals("DataStore")) {
    	    		/* Datastore retieval */
    	        	Key k3 = new KeyFactory.Builder("user", user.getNickname())
    			   .addChild("file", filename)
@@ -258,10 +265,11 @@ public class Pa3jspServlet extends HttpServlet {
    	    for (Entity result : pq.asIterable()) {  
    	    	String filesize = String.valueOf(
    	    	    	result.getProperty("file-contentlen"));
+   	    	String filestore = (String) result.getProperty("file-store");
    	    	
-   	    	if (Integer.valueOf(filesize) > 1024*924)	{
+   	    	if (filestore.equals("BlobStore"))	{
    	    		resp.getWriter().println("<i> File is stored in Blobstore, deleting it from there </i><br>");
-   	    	} else {
+   	    	} else if (filestore.equals("DataStore")) {
    	    		resp.getWriter().println("<i> File is stored in Datastore, deleting it from there </i><br>");
    	    		datastore.delete(k1);
    	    	}
@@ -303,7 +311,7 @@ public class Pa3jspServlet extends HttpServlet {
 								  EntityNotFoundException {
 
 		int contentLength;
-		int ONE_MB = 1024*1024;
+		int DATASTORE_LIMIT = 1000*1000;
 		
         resp.getWriter().println("<i> ops = " + "insert" + "</i><br>");
         resp.getWriter().println("<i> field_name = " + item.getFieldName() + "</i><br>");  
@@ -314,7 +322,7 @@ public class Pa3jspServlet extends HttpServlet {
         
         contentLength = req.getContentLength();
         
-        if (contentLength < ONE_MB)
+        if (contentLength < DATASTORE_LIMIT)
         {
         	storeInDataStore(userName, item, req, resp);
         }
@@ -360,9 +368,7 @@ public class Pa3jspServlet extends HttpServlet {
        	    complete_len += len;
         	resp.getWriter().println("<br><i>File Chunk " + chunk_count +
         			" with lenth " + len + "</i><br>" );
-        			
         	chunk_count++;
-       	    
         }	
         Blob blob = new Blob(buffer);
        	f.setProperty("file-contentlen", complete_len);
