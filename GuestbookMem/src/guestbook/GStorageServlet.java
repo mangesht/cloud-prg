@@ -1,6 +1,5 @@
-package guestbook;
+package guestbook ;
 
-import java.io.IOException;
 import com.google.appengine.api.files.AppEngineFile;
 import com.google.appengine.api.files.FileReadChannel;
 import com.google.appengine.api.files.FileService;
@@ -16,38 +15,12 @@ import java.nio.channels.Channels;
 import java.util.logging.Logger;
 
 import javax.servlet.http.*;
-import javax.servlet.http.*;
 
-import org.mortbay.log.Log;
-
-import com.google.appengine.api.users.User;
-import com.google.appengine.api.users.UserService;
-import com.google.appengine.api.users.UserServiceFactory;
-//import com.google.storage.onestore.v3.OnestoreEntity.User;
-
-@SuppressWarnings("serial")
-public class GuestbookServlet extends HttpServlet {
+public class GStorageServlet extends  HttpServlet {
 	public static final String BUCKETNAME = "cloud-prg-prg3";
 	public static final String FILENAME = "f.txt";
 	private static final Logger log = Logger.getLogger(GuestbookServlet.class.getName());
-
-	public void doGet(HttpServletRequest req, HttpServletResponse resp)
-			throws IOException {
-		String sl ;
-		sl = new String ();
-        UserService userService = UserServiceFactory.getUserService();
-        User user = userService.getCurrentUser();
-        if (user != null) {
-        	resp.setContentType("text/plain");
-        	resp.getWriter().println("Hello, " + user.getNickname());
-        	//CreateLogoutURL();
-        	sl = userService.createLogoutURL(getServletInfo());
-        	resp.getWriter().println(sl);
-        }else{
-        	resp.sendRedirect(userService.createLoginURL(req.getRequestURI()));
-        }
-	}
-	/*
+	
 	public void doGet(HttpServletRequest req, HttpServletResponse resp) 
 			throws IOException {
 		resp.setContentType("text/plain");
@@ -109,5 +82,4 @@ public class GuestbookServlet extends HttpServlet {
 	     readChannel.close();
 	
 	}
-*/
 }

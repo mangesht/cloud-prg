@@ -100,20 +100,27 @@ to include your name with greetings you post.</p>
 <html>
 <body>
 
-What's your name? <INPUT TYPE=TEXT NAME="username" SIZE=20>
+What's your name No Name? <INPUT TYPE=TEXT NAME="username" SIZE=20>
     <form action="/guestbook.jsp" method="get">
       <div><input type="text" name="guestbookName" value="${fn:escapeXml(guestbookName)}"/></div>
       <div id="gbSubmit"><input type="submit" value="Switch Guestbook" /></div>
-      
-    </form>
-
-
+     </form>
 </body>
 
 </html>
 
 <html>
+<body>
+    <form action="/gstorage" method="get">
+      <div><input type="text" name="noname" value="${fn:escapeXml(noname)}"/></div>
+      <div id="gbSubmit"><input type="submit" value="Upload" /></div>
+     </form>
+</body>
 
+</html>
+
+
+<html>
 <body>
 <form action="<%= blobstoreService.createUploadUrl("/upload") %>" method="post" enctype="multipart/form-data">
      <input type="text" name="foo">

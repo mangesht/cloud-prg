@@ -41,4 +41,15 @@
     <url-pattern>/serve</url-pattern>
   </servlet-mapping>
 
+
+  <servlet>
+    <servlet-name>GStorage</servlet-name>
+    <servlet-class>guestbook.GStorageServlet</servlet-class>
+  </servlet>
+ 
+  <servlet-mapping>
+    <servlet-name>GStorage</servlet-name>
+    <url-pattern>/gstorage</url-pattern>
+  </servlet-mapping>
+
 </web-app>
