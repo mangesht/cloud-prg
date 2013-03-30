@@ -18,12 +18,6 @@
 <html>
 <head>
 <title> PA3 File Storage </title>
-<script type="text/javascript">
-function update_file_size()
-{
-	alert(file_size.file[0].size);
-}
-</script>
 </head>
 
 <body>
@@ -36,7 +30,7 @@ function update_file_size()
 %>
 
 <div id="welcome">
-<h1>PA3 File Storage</h2>
+<h1>PA3 File Storage -- Using <%= (request.getParameter("store")) %></h2>
 </div>
 
 <%
@@ -51,7 +45,6 @@ function update_file_size()
 <p>Your name is being added as User entity in the datastore.</p>
 </div>
 <%    
-      	
       	Entity e = new Entity("user", user.getNickname());
       	datastore.put(e);
       }	
@@ -77,6 +70,7 @@ function update_file_size()
         <input type="submit" value="Submit" />
         <input type="hidden" name="fun" value="insert" />
         <input type="hidden" name="file_size" value="insert" />
+        <input type="hidden" name="file_storage" value="<%= (request.getParameter("store")) %>" />
     </div>
 </form>
 
@@ -85,6 +79,7 @@ function update_file_size()
         <input name="file_name" type="text"></input> &nbsp;
         <input type="submit" value="Check File"/>
         <input type="hidden" name="fun" value="check" />
+        <input type="hidden" name="file_storage" value="<%= (request.getParameter("store")) %>" />
     </div>
 </form>
 
@@ -93,6 +88,7 @@ function update_file_size()
         <input name="file_name" type="text"></input> &nbsp;
         <input type="submit" value="Find File"/>
         <input type="hidden" name="fun" value="find"/>
+        <input type="hidden" name="file_storage" value="<%= (request.getParameter("store")) %>" />
     </div>
 </form>
 
@@ -101,13 +97,15 @@ function update_file_size()
         <input name="file_name" type="text"></input> &nbsp;
         <input type="submit" value="Remove File"/>
         <input type="hidden" name="fun" value="remove"/>
+        <input type="hidden" name="file_storage" value="<%= (request.getParameter("store")) %>" />
     </div>
 </form>
 
 <form action="/fops" method="post">
     <div> 
-        <input type="submit" value="listing"/>
+        <input type="submit" value="Listing"/>
         <input type="hidden" name="fun" value="listing" />
+        <input type="hidden" name="file_storage" value="<%= (request.getParameter("store")) %>" />
     </div>
 </form>
 
