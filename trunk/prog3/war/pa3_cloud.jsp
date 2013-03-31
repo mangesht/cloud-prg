@@ -30,7 +30,7 @@
 %>
 
 <div id="welcome">
-<h1>PA3 File Storage -- Using <%= (request.getParameter("store")) %></h2>
+<h1>PA3 File Storage -- Using Google Cloud Storage</h2>
 </div>
 
 <%
@@ -63,49 +63,44 @@
 </div>
 
 <div id="ops">
-<form action="/fops" enctype="multipart/form-data" method="post">
+<form action="fops_cloudstore" enctype="multipart/form-data" method="post">
     <div>
         <input name="file_name" type="file"  value="Select a File" size="40">
         </input> &nbsp;
-        <input type="submit" value="Submit" />
         <input type="hidden" name="fun" value="insert" />
         <input type="hidden" name="file_size" value="insert" />
-        <input type="hidden" name="file_storage" value="<%= (request.getParameter("store")) %>" />
+        <input type="submit" value="Submit" />
     </div>
 </form>
 
-<form action="/fops" method="post">
+<form action="fops_cloudstore" method="post">
     <div>
         <input name="file_name" type="text"></input> &nbsp;
-        <input type="submit" value="Check File"/>
         <input type="hidden" name="fun" value="check" />
-        <input type="hidden" name="file_storage" value="<%= (request.getParameter("store")) %>" />
+        <input type="submit" value="Check File"/>
     </div>
 </form>
 
-<form action="/fops" method="post">
+<form action="fops_cloudstore" method="post">
     <div>
         <input name="file_name" type="text"></input> &nbsp;
-        <input type="submit" value="Find File"/>
         <input type="hidden" name="fun" value="find"/>
-        <input type="hidden" name="file_storage" value="<%= (request.getParameter("store")) %>" />
+        <input type="submit" value="Find File"/>
     </div>
 </form>
 
-<form action="/fops" method="post">
+<form action="fops_cloudstore" method="post">
     <div>
         <input name="file_name" type="text"></input> &nbsp;
-        <input type="submit" value="Remove File"/>
         <input type="hidden" name="fun" value="remove"/>
-        <input type="hidden" name="file_storage" value="<%= (request.getParameter("store")) %>" />
+        <input type="submit" value="Remove File"/>
     </div>
 </form>
 
-<form action="/fops" method="post">
+<form action="fops_cloudstore" method="post">
     <div> 
-        <input type="submit" value="Listing"/>
         <input type="hidden" name="fun" value="listing" />
-        <input type="hidden" name="file_storage" value="<%= (request.getParameter("store")) %>" />
+        <input type="submit" value="Listing"/>
     </div>
 </form>
 
