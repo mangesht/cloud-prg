@@ -1,10 +1,10 @@
-@java pa3test http://pa3-cs553-jsp.appspot.com/fops_cloudstore 07mpFATjIt remove 
-@java pa3test http://pa3-cs553-jsp.appspot.com/fops_cloudstore 0qQXaTNhUL remove 
-@java pa3test http://pa3-cs553-jsp.appspot.com/fops_cloudstore 18d31GaHSY remove 
-@java pa3test http://pa3-cs553-jsp.appspot.com/fops_cloudstore 2D7PqRvG1O remove 
-@java pa3test http://pa3-cs553-jsp.appspot.com/fops_cloudstore 2FuohJezLy remove 
-@java pa3test http://pa3-cs553-jsp.appspot.com/fops_cloudstore 326JyqzNgU remove 
-@java pa3test http://pa3-cs553-jsp.appspot.com/fops_cloudstore 329wr3OFSp remove 
-@java pa3test http://pa3-cs553-jsp.appspot.com/fops_cloudstore 4arSSqT343 remove 
-@java pa3test http://pa3-cs553-jsp.appspot.com/fops_cloudstore 4ie4huzAph remove 
-@java pa3test http://pa3-cs553-jsp.appspot.com/fops_cloudstore 64jztKfbLP remove 
+@java pa3Test -u http://pa3-cs553-jsp.appspot.com/fops_cloudstore -f 07mpFATjIt -c remove  -n 1 
+@java pa3Test -u http://pa3-cs553-jsp.appspot.com/fops_cloudstore -f 0qQXaTNhUL -c remove  -n 1 
+@java pa3Test -u http://pa3-cs553-jsp.appspot.com/fops_cloudstore -f 18d31GaHSY -c remove  -n 1 
+@java pa3Test -u http://pa3-cs553-jsp.appspot.com/fops_cloudstore -f 2D7PqRvG1O -c remove  -n 1 
+@java pa3Test -u http://pa3-cs553-jsp.appspot.com/fops_cloudstore -f 2FuohJezLy -c remove  -n 1 
+@java pa3Test -u http://pa3-cs553-jsp.appspot.com/fops_cloudstore -f 326JyqzNgU -c remove  -n 1 
+@java pa3Test -u http://pa3-cs553-jsp.appspot.com/fops_cloudstore -f 329wr3OFSp -c remove  -n 1 
+@java pa3Test -u http://pa3-cs553-jsp.appspot.com/fops_cloudstore -f 4arSSqT343 -c remove  -n 1 
+@java pa3Test -u http://pa3-cs553-jsp.appspot.com/fops_cloudstore -f 4ie4huzAph -c remove  -n 1 
+@java pa3Test -u http://pa3-cs553-jsp.appspot.com/fops_cloudstore -f 64jztKfbLP -c remove  -n 1 
