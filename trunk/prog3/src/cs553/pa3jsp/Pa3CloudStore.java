@@ -28,6 +28,7 @@ import com.google.appengine.api.datastore.PreparedQuery;
 
 
 import com.google.appengine.api.files.AppEngineFile;
+import com.google.appengine.api.files.FileReadChannel;
 /*import com.google.appengine.api.files.FileReadChannel;*/
 import com.google.appengine.api.files.FileService;
 import com.google.appengine.api.files.FileServiceFactory;
@@ -144,6 +145,9 @@ public class Pa3CloudStore extends HttpServlet {
           		  throws IOException,
                     ServletException         {
 		int found = 0;
+        int len;
+        int complete_len = 0;        
+        String buffer;		
   	    String filename=req.getParameter("file_name");	
         DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();
        	Key k2 = new KeyFactory.Builder("user", user.getNickname())
@@ -161,8 +165,15 @@ public class Pa3CloudStore extends HttpServlet {
    	    		/* Datastore retieval */
    	    	} else if (filestore.equals("CloudStore")) {
    	    		/* Cloudstore retieval */
-	   	   	    /*
-   	        	Blob blob = (Blob) resultFile.getProperty("file-content");
+   	   	    	String filesize = String.valueOf(
+   	   	   	    	result.getProperty("file-contentlen"));   	    		
+   	            FileService fileService = FileServiceFactory.getFileService();   	    		
+   	    		String cloud_filename = "/gs/" + BUCKETNAME + "/" + filename;
+                AppEngineFile readableFile = new AppEngineFile(cloud_filename);
+                FileReadChannel readChannel =
+                    fileService.openReadChannel(readableFile, false);
+                // Again, different standard Java ways of reading from the channel.
+                
    		   	    String mimeType = "application/octet-stream";
    	        	resp.setContentType(mimeType);
    	            resp.setContentLength((int) Integer.valueOf(filesize));
@@ -170,9 +181,16 @@ public class Pa3CloudStore extends HttpServlet {
    	            String headerValue = String.format("attachment; filename=\"%s\"", filename);
    	            resp.setHeader(headerKey, headerValue);   	        	
    	            OutputStream outStream = resp.getOutputStream();
-   	            byte[] buffer = blob.getBytes();
-    	        outStream.write(buffer, 0, Integer.valueOf(filesize));
-    	        */
+
+                BufferedReader reader =
+                        new BufferedReader(Channels.newReader(readChannel, "UTF8"));
+                String str;
+                while ((str = reader.readLine()) != null) {
+                	str += "\n";
+               		outStream.write(str.getBytes(), 0, str.length());
+                }        	
+
+                readChannel.close();     	        
    	    	}
    	    }
    	    
@@ -318,33 +336,33 @@ public class Pa3CloudStore extends HttpServlet {
         }
 
        	
-        resp.getWriter().println("<i>File Service </i><br>" );
+        //resp.getWriter().println("<i>File Service </i><br>" );
 
        	FileService fileService = FileServiceFactory.getFileService();
        	
-        resp.getWriter().println("<i>options Builder </i><br>" );
+        //resp.getWriter().println("<i>options Builder </i><br>" );
 
        	GSFileOptionsBuilder optionsBuilder = new GSFileOptionsBuilder()
            .setBucket(BUCKETNAME)
            .setKey(item.getName())
            .setMimeType("text/plain")
            .setAcl("public-read"); 
-        resp.getWriter().println("<i>Writable File </i><br>" );
+        //resp.getWriter().println("<i>Writable File </i><br>" );
 
        	AppEngineFile writableFile =
                 fileService.createNewGSFile(optionsBuilder.build());
        
      
        	boolean lock = false;
-        resp.getWriter().println("<i>Writable Channel  with lock false</i><br>" );
+        //resp.getWriter().println("<i>Writable Channel  with lock false</i><br>" );
 
         FileWriteChannel writeChannel =
                 fileService.openWriteChannel(writableFile, lock);
-        resp.getWriter().println("<i>Printwriter </i><br>" );
+        //resp.getWriter().println("<i>Printwriter </i><br>" );
 
         PrintWriter out = new PrintWriter(Channels.newWriter(writeChannel, "UTF8"));
         
-        resp.getWriter().println("<i>Store Contents</i><br>" );
+        //resp.getWriter().println("<i>Store Contents</i><br>" );
 
         
         while ((len = stream.read(buffer, complete_len, (buffer.length-complete_len))) != -1) {
@@ -373,7 +391,7 @@ public class Pa3CloudStore extends HttpServlet {
         out.close();
 
         String path = writableFile.getFullPath();
-        resp.getWriter().println("<i>Store Path  in filinfo : " + path + "</i><br>" );
+        //resp.getWriter().println("<i>Store Path  in filinfo : " + path + "</i><br>" );
         
        	d.setProperty("file-contentlen", complete_len);
        	d.setProperty("file-name", item.getName());
@@ -381,9 +399,9 @@ public class Pa3CloudStore extends HttpServlet {
        	d.setProperty("file-store", "CloudStore");       	
        	datastore.put(d);       	
         // Now finalize
-        resp.getWriter().println("<i>Finally Close</i><br>" );
+        //resp.getWriter().println("<i>Finally Close</i><br>" );
         lock = true;
-        resp.getWriter().println("<i>Writable Channel with lock true</i><br>" );
+        //resp.getWriter().println("<i>Writable Channel with lock true</i><br>" );
 
         writeChannel =
                 fileService.openWriteChannel(writableFile, lock);
