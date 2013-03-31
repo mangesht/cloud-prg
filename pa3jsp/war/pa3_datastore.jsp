@@ -25,30 +25,22 @@
 <%
 UserService userService = UserServiceFactory.getUserService();
 User user = userService.getCurrentUser();
+String store;
+store = request.getParameter("store");
 if (user != null) {
 pageContext.setAttribute("user", user);
-%>
-
-<div id="welcome">
-<h1>PA3 File Storage -- Using <%= (request.getParameter("store")) %></h2>
-</div>
-
-<%
 DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();
 Key k = KeyFactory.createKey("user", user.getNickname());
 try {
 Entity e = datastore.get(k);
 } catch (EntityNotFoundException e1) {
-%>
-<div id="Banner">
-<p>You are a new user.</p>
-<p>Your name is being added as User entity in the datastore.</p>
-</div>
-<%
-Entity e = new Entity("user", user.getNickname());
-datastore.put(e);
+response.sendRedirect(userService.createLoginURL(request.getRequestURI()));
 }
 %>
+<div id="welcome">
+<h1>PA3 File Storage -- Using Datastore</h2>
+</div>
+
 <div id="Banner">
 <p>Hello, ${fn:escapeXml(user.nickname)}! </p>
 </div>
@@ -63,49 +55,44 @@ datastore.put(e);
 </div>
 
 <div id="ops">
-<form action="/fops" enctype="multipart/form-data" method="post">
+<form action="fops_datastore" enctype="multipart/form-data" method="post">
 <div>
 <input name="file_name" type="file" value="Select a File" size="40">
 </input> &nbsp;
-<input type="submit" value="Submit" />
 <input type="hidden" name="fun" value="insert" />
 <input type="hidden" name="file_size" value="insert" />
-<input type="hidden" name="file_storage" value="<%= (request.getParameter("store")) %>" />
+<input type="submit" value="Submit" />
 </div>
 </form>
 
-<form action="/fops" method="post">
+<form action="fops_datastore" method="post">
 <div>
 <input name="file_name" type="text"></input> &nbsp;
-<input type="submit" value="Check File"/>
 <input type="hidden" name="fun" value="check" />
-<input type="hidden" name="file_storage" value="<%= (request.getParameter("store")) %>" />
+<input type="submit" value="Check File"/>
 </div>
 </form>
 
-<form action="/fops" method="post">
+<form action="fops_datastore" method="post">
 <div>
 <input name="file_name" type="text"></input> &nbsp;
-<input type="submit" value="Find File"/>
 <input type="hidden" name="fun" value="find"/>
-<input type="hidden" name="file_storage" value="<%= (request.getParameter("store")) %>" />
+<input type="submit" value="Find File"/>
 </div>
 </form>
 
-<form action="/fops" method="post">
+<form action="fops_datastore" method="post">
 <div>
 <input name="file_name" type="text"></input> &nbsp;
-<input type="submit" value="Remove File"/>
 <input type="hidden" name="fun" value="remove"/>
-<input type="hidden" name="file_storage" value="<%= (request.getParameter("store")) %>" />
+<input type="submit" value="Remove File"/>
 </div>
 </form>
 
-<form action="/fops" method="post">
+<form action="fops_datastore" method="post">
 <div>
-<input type="submit" value="Listing"/>
 <input type="hidden" name="fun" value="listing" />
-<input type="hidden" name="file_storage" value="<%= (request.getParameter("store")) %>" />
+<input type="submit" value="Listing"/>
 </div>
 </form>
 
@@ -122,3 +109,4 @@ to continue.</p>
 
 </body>
 </html>
+

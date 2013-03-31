@@ -5,15 +5,40 @@ xmlns:web="http://java.sun.com/xml/ns/javaee/web-app_2_5.xsd"
 xsi:schemaLocation="http://java.sun.com/xml/ns/javaee
 http://java.sun.com/xml/ns/javaee/web-app_2_5.xsd" version="2.5">
   
+  <servlet>
+                <servlet-name>Pa3DataStore</servlet-name>
+                <servlet-class>cs553.pa3jsp.Pa3DataStore</servlet-class>
+        </servlet>
         <servlet>
-                <servlet-name>Pa3jsp</servlet-name>
-                <servlet-class>cs553.pa3jsp.Pa3jspServlet</servlet-class>
+                <servlet-name>Pa3CloudStore</servlet-name>
+                <servlet-class>cs553.pa3jsp.Pa3CloudStore</servlet-class>
+        </servlet>
+        <servlet>
+                <servlet-name>Pa3BlobStore</servlet-name>
+                <servlet-class>cs553.pa3jsp.Pa3BlobStore</servlet-class>
+        </servlet>
+        <servlet>
+                <servlet-name>Pa3StoreSelect</servlet-name>
+                <servlet-class>cs553.pa3jsp.Pa3StoreSelect</servlet-class>
         </servlet>
         <servlet-mapping>
-                <servlet-name>Pa3jsp</servlet-name>
-                <url-pattern>/fops</url-pattern>
+                <servlet-name>Pa3CloudStore</servlet-name>
+                <url-pattern>/fops_cloudstore</url-pattern>
         </servlet-mapping>
+        <servlet-mapping>
+                <servlet-name>Pa3DataStore</servlet-name>
+                <url-pattern>/fops_datastore</url-pattern>
+        </servlet-mapping>
+        <servlet-mapping>
+                <servlet-name>Pa3BlobStore</servlet-name>
+                <url-pattern>/fops_blobstore</url-pattern>
+        </servlet-mapping>
+        <servlet-mapping>
+                <servlet-name>Pa3StoreSelect</servlet-name>
+                <url-pattern>/storeselect</url-pattern>
+        </servlet-mapping>      
         <welcome-file-list>
-                <welcome-file>pa3.jsp</welcome-file>
-        </welcome-file-list>  
+                <welcome-file>index.jsp</welcome-file>
+        </welcome-file-list>
+ 
 </web-app>
