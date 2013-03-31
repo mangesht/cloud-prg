@@ -346,21 +346,34 @@ public class Pa3CloudStore extends HttpServlet {
         
         resp.getWriter().println("<i>Store Contents</i><br>" );
 
+        
         while ((len = stream.read(buffer, complete_len, (buffer.length-complete_len))) != -1) {
        	    complete_len += len;
         	resp.getWriter().println("<br><i>File Chunk " + chunk_count +
-        			" with lenth " + len + "</i><br>" );
+        			" with lenth " + len + " complete_len = " + complete_len +
+        				"buffer.length = " + buffer.length + "</i><br>" );
         	chunk_count++;
            	if (complete_len == buffer.length) {
+            	resp.getWriter().println("<br><i>Writing into cloud " 
+            				+ " complete_len = " + complete_len +
+            				"buffer.length = " + buffer.length + "</i><br>" );
+
            		out.println(buffer.toString());
            		complete_len = 0;
            	}        	
         }
-        
+
+       	if (complete_len < buffer.length) {
+       		String str = new String(buffer, 0, complete_len);
+        	resp.getWriter().println("<br><i>Writing into cloud " 
+    				+ " complete_len = " + complete_len +
+    				"buffer.length = " + buffer.length + "</i><br>" );
+       		out.println(str);
+       	}
         out.close();
-        resp.getWriter().println("<i>Store Path in filinfo</i><br>" );
 
         String path = writableFile.getFullPath();
+        resp.getWriter().println("<i>Store Path  in filinfo : " + path + "</i><br>" );
         
        	d.setProperty("file-contentlen", complete_len);
        	d.setProperty("file-name", item.getName());
@@ -374,6 +387,7 @@ public class Pa3CloudStore extends HttpServlet {
 
         writeChannel =
                 fileService.openWriteChannel(writableFile, lock);
+        //writeChannel.write();        
        	writeChannel.closeFinally();
         resp.getWriter().println("<br><i>File " +  item.getName() + " Added. Length =" + complete_len + "</i><br>" );
         
