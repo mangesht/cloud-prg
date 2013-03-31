@@ -1,0 +1,10 @@
+@java pa3test http://pa3-cs553-jsp.appspot.com/fops_cloudstore 07mpFATjIt insert
+@java pa3test http://pa3-cs553-jsp.appspot.com/fops_cloudstore 0qQXaTNhUL insert
+@java pa3test http://pa3-cs553-jsp.appspot.com/fops_cloudstore 18d31GaHSY insert
+@java pa3test http://pa3-cs553-jsp.appspot.com/fops_cloudstore 2D7PqRvG1O insert
+@java pa3test http://pa3-cs553-jsp.appspot.com/fops_cloudstore 2FuohJezLy insert
+@java pa3test http://pa3-cs553-jsp.appspot.com/fops_cloudstore 326JyqzNgU insert
+@java pa3test http://pa3-cs553-jsp.appspot.com/fops_cloudstore 329wr3OFSp insert
+@java pa3test http://pa3-cs553-jsp.appspot.com/fops_cloudstore 4arSSqT343 insert
+@java pa3test http://pa3-cs553-jsp.appspot.com/fops_cloudstore 4ie4huzAph insert
+@java pa3test http://pa3-cs553-jsp.appspot.com/fops_cloudstore 64jztKfbLP insert
