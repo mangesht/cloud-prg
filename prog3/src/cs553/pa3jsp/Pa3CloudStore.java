@@ -53,42 +53,52 @@ public class Pa3CloudStore extends HttpServlet {
         UserService userService = UserServiceFactory.getUserService();
         User user = userService.getCurrentUser();
 
-        if (user != null) {
-        	boolean isMultipart = ServletFileUpload.isMultipartContent(req);
-        	try {
-	            if (isMultipart == true) {
-	            	performInsert(user, req,resp);
-	            } else {
-	                String ops=req.getParameter("fun");
-	                if (ops.equals("listing")) {
-	                	performListing(user, req,resp);
-	                } else if (ops.equals("check")) {
-	                	performCheck(user, req,resp);
-	                } else if (ops.equals("find")) {
-	                	performFind(user, req,resp);
-	                } else if (ops.equals("remove")) {
-	                	performRemove(user, req,resp);
-	                }
-	            }
-        	} catch (IOException e) {
-        		throw new ServletException("Cannot parse multipart request: " + e.getMessage());
-        	}
-        } else {
-            resp.sendRedirect(userService.createLoginURL(req.getRequestURI()));
-        }		
+        if (user == null)
+        {
+        	/*resp.sendRedirect(userService.createLoginURL(req.getRequestURI()));*/
+        }
+        
+    	boolean isMultipart = ServletFileUpload.isMultipartContent(req);
+    	try {
+            if (isMultipart == true) {
+            	performInsert(user, req,resp);
+            } else {
+                String ops=req.getParameter("fun");
+                if (ops.equals("listing")) {
+                	performListing(user, req,resp);
+                } else if (ops.equals("check")) {
+                	performCheck(user, req,resp);
+                } else if (ops.equals("find")) {
+                	performFind(user, req,resp);
+                } else if (ops.equals("remove")) {
+                	performRemove(user, req,resp);
+                }
+            }
+    	} catch (IOException e) {
+    		throw new ServletException("Cannot parse multipart request: " + e.getMessage());
+    	}
 	}
 	
 	public void outputHeader(User user,
 			HttpServletRequest req,
 			HttpServletResponse resp) 
 	        		 throws ServletException, IOException {
+   	    String login_user;
+		if (user == null)
+   	    {
+   	    	login_user = "harsha.matadhikari";
+   	    }
+   	    else
+   	    {
+   	    	login_user = user.getNickname();   	    	
+   	    }			
         resp.setContentType("text/html");
         resp.getWriter().println("<div id=\"welcome\">");
      	resp.getWriter().println("<h1>PA3 File Storage -- Using CloudStore</h2>");
         resp.getWriter().println("</div>");
         
         resp.getWriter().println("<div id=\"Banner\">");
-        resp.getWriter().println("<p> Hello " + user.getNickname() + "</p>");
+        resp.getWriter().println("<p> Hello " + login_user + "</p>");
 			
         resp.getWriter().println("</div>");
         
@@ -114,9 +124,17 @@ public class Pa3CloudStore extends HttpServlet {
             HttpServletResponse resp)
           		  throws IOException,
                     ServletException         {
-		
+   	    String login_user;
+		if (user == null)
+   	    {
+   	    	login_user = "harsha.matadhikari";
+   	    }
+   	    else
+   	    {
+   	    	login_user = user.getNickname();   	    	
+   	    }			
         DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();
-       	Key k3 = new KeyFactory.Builder("user", user.getNickname()).getKey();  	    
+       	Key k3 = new KeyFactory.Builder("user", login_user).getKey();  	    
   	    Query q = new Query("fileinfo", k3);
    	    PreparedQuery pq = datastore.prepare(q); 
    	    outputHeader(user, req,resp);
@@ -148,9 +166,19 @@ public class Pa3CloudStore extends HttpServlet {
         int len;
         int complete_len = 0;        
         String buffer;		
-  	    String filename=req.getParameter("file_name");	
+  	    String filename=req.getParameter("file_name");
+   	    String login_user;
+		if (user == null)
+   	    {
+   	    	login_user = "harsha.matadhikari";
+   	    }
+   	    else
+   	    {
+   	    	login_user = user.getNickname();   	    	
+   	    }			
+  	    
         DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();
-       	Key k2 = new KeyFactory.Builder("user", user.getNickname())
+       	Key k2 = new KeyFactory.Builder("user", login_user)
 		   .addChild("fileinfo", filename)
 		   .getKey();  	    
   	    Query q = new Query(k2);
@@ -209,10 +237,19 @@ public class Pa3CloudStore extends HttpServlet {
           		  throws IOException,
                     ServletException         {
 		int found = 0;
+   	    String login_user;
+		if (user == null)
+   	    {
+   	    	login_user = "harsha.matadhikari";
+   	    }
+   	    else
+   	    {
+   	    	login_user = user.getNickname();   	    	
+   	    }			
   	    String filename=req.getParameter("file_name");	
         DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();
    	    outputHeader(user, req,resp);
-       	Key k2 = new KeyFactory.Builder("user", user.getNickname())
+       	Key k2 = new KeyFactory.Builder("user", login_user)
 		   .addChild("fileinfo", filename)
 		   .getKey();  	    
        	
@@ -245,9 +282,19 @@ public class Pa3CloudStore extends HttpServlet {
             HttpServletResponse resp)
           		  throws IOException,
                     ServletException         {
-  	    String filename=req.getParameter("file_name");	
+   	    String login_user;
+		if (user == null)
+   	    {
+   	    	login_user = "harsha.matadhikari";
+   	    }
+   	    else
+   	    {
+   	    	login_user = user.getNickname();   	    	
+   	    }			
+
+		String filename=req.getParameter("file_name");	
         DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();
-       	Key k2 = new KeyFactory.Builder("user", user.getNickname())
+       	Key k2 = new KeyFactory.Builder("user", login_user)
 		   .addChild("fileinfo", filename)
 		   .getKey();  	    
        	
@@ -277,6 +324,15 @@ public class Pa3CloudStore extends HttpServlet {
 			                  HttpServletResponse resp)
 			                		  throws IOException,
 			                          ServletException         {
+   	    String login_user;
+		if (user == null)
+   	    {
+   	    	login_user = "harsha.matadhikari";
+   	    }
+   	    else
+   	    {
+   	    	login_user = user.getNickname();   	    	
+   	    }			
     	// Create a factory for disk-based file items
    	    outputHeader(user, req,resp);   		
         resp.getWriter().println("<i> So you want do the operation " + "insert" + " ! Right?</i><br>");             	
@@ -287,7 +343,7 @@ public class Pa3CloudStore extends HttpServlet {
     		while (iter.hasNext()) {
     			FileItemStream item = iter.next();
     			if (item.isFormField()) continue;
-        		storeInStore(user.getNickname(), item, req,resp);
+        		storeInStore(login_user, item, req,resp);
     		}
     	} catch (FileUploadException e) {
     		throw new ServletException("Cannot parse multipart request: " + e.getMessage());
@@ -336,33 +392,27 @@ public class Pa3CloudStore extends HttpServlet {
         }
 
        	
-        //resp.getWriter().println("<i>File Service </i><br>" );
 
        	FileService fileService = FileServiceFactory.getFileService();
        	
-        //resp.getWriter().println("<i>options Builder </i><br>" );
 
        	GSFileOptionsBuilder optionsBuilder = new GSFileOptionsBuilder()
            .setBucket(BUCKETNAME)
            .setKey(item.getName())
            .setMimeType("text/plain")
            .setAcl("public-read"); 
-        //resp.getWriter().println("<i>Writable File </i><br>" );
 
        	AppEngineFile writableFile =
                 fileService.createNewGSFile(optionsBuilder.build());
        
      
        	boolean lock = false;
-        //resp.getWriter().println("<i>Writable Channel  with lock false</i><br>" );
 
         FileWriteChannel writeChannel =
                 fileService.openWriteChannel(writableFile, lock);
-        //resp.getWriter().println("<i>Printwriter </i><br>" );
 
         PrintWriter out = new PrintWriter(Channels.newWriter(writeChannel, "UTF8"));
         
-        //resp.getWriter().println("<i>Store Contents</i><br>" );
 
         
         while ((len = stream.read(buffer, complete_len, (buffer.length-complete_len))) != -1) {
@@ -391,7 +441,6 @@ public class Pa3CloudStore extends HttpServlet {
         out.close();
 
         String path = writableFile.getFullPath();
-        //resp.getWriter().println("<i>Store Path  in filinfo : " + path + "</i><br>" );
         
        	d.setProperty("file-contentlen", complete_len);
        	d.setProperty("file-name", item.getName());
@@ -399,13 +448,10 @@ public class Pa3CloudStore extends HttpServlet {
        	d.setProperty("file-store", "CloudStore");       	
        	datastore.put(d);       	
         // Now finalize
-        //resp.getWriter().println("<i>Finally Close</i><br>" );
         lock = true;
-        //resp.getWriter().println("<i>Writable Channel with lock true</i><br>" );
 
         writeChannel =
                 fileService.openWriteChannel(writableFile, lock);
-        //writeChannel.write();        
        	writeChannel.closeFinally();
         resp.getWriter().println("<br><i>File " +  item.getName() + " Added. Length =" + complete_len + "</i><br>" );
         
