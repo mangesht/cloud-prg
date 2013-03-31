@@ -36,7 +36,7 @@ public class pa3test
         writer.flush();
     }
     
-    public static void addFilePart(String fieldName, File uploadFile)
+    public static int addFilePart(String fieldName, File uploadFile)
             throws IOException {
         String fileName = uploadFile.getName();
         writer.append("--" + boundary).append(LINE_FEED);
@@ -55,14 +55,17 @@ public class pa3test
         FileInputStream inputStream = new FileInputStream(uploadFile);
         byte[] buffer = new byte[4096];
         int bytesRead = -1;
+        int length = 0;
         while ((bytesRead = inputStream.read(buffer)) != -1) {
             outputStream.write(buffer, 0, bytesRead);
+            length += bytesRead;
         }
         outputStream.flush();
         inputStream.close();
          
         writer.append(LINE_FEED);
-        writer.flush();     
+        writer.flush(); 
+        return length;
     }    
     
     public static List<String> finish(int footer) throws IOException {
@@ -72,6 +75,7 @@ public class pa3test
         {
         	writer.append(LINE_FEED).flush();
         	writer.append("--" + boundary + "--").append(LINE_FEED);
+        	writer.close();        	
         }
         else 
         {
@@ -98,11 +102,12 @@ public class pa3test
     
     public static void testInsert(String[] args) {
 
+    	  long startTime, endTime, fsize;
 		  boundary = "===" + System.currentTimeMillis() + "===";
 		  
 	      try
 	      {
-		      System.out.println("Uploading file " + args[1]);
+		      
 		      
 		      URL url = new URL( args[0] );
 		      File uploadFile = new File(args[1]);
@@ -114,23 +119,24 @@ public class pa3test
 		      hConnection.setRequestMethod("POST");	
 		      hConnection.setRequestProperty("Content-Type",
 		              "multipart/form-data; boundary=" + boundary);
-		      System.out.println("Start Time = " + System.currentTimeMillis());		      
+		      startTime  = System.currentTimeMillis();
 		      outputStream = hConnection.getOutputStream();
 		      writer = new PrintWriter(new OutputStreamWriter(outputStream, charset),
 		              true);
     		  
 		      addFormField("fun", "insert");
 		      addFormField("file_size", "insert");
-		      addFilePart("file_name", uploadFile);
+		      fsize = addFilePart("file_name", uploadFile);
 		      
 		      
 		      List<String> response = finish(1);
+		      endTime  = System.currentTimeMillis();
 		      
-		      for (String line : response) {
-		          System.out.println(line);
-		      }
-		      System.out.println("SERVER REPLIED: ");
-		      System.out.println("End Time = " + System.currentTimeMillis());
+		      //for (String line : response) {
+		          //System.out.println(line);
+		      //}
+		      
+		      System.out.println(args[1] + "," + fsize + "," + startTime + "," + endTime + "," + (endTime-startTime));
 		      
 		  } catch (IOException ex) {
 		      System.out.println("ERROR: " + ex.getMessage());
@@ -139,13 +145,11 @@ public class pa3test
     }
     
     public static void testFind(String[] args) {
-
+  	  	  long startTime, endTime;
 		  boundary = "===" + System.currentTimeMillis() + "===";
 		  
 	      try
 	      {
-		      System.out.println("Finding file " + args[1]);
-		      
 		      URL url = new URL( args[0] );
 		      File uploadFile = new File(args[1]);
 		      hConnection = (HttpURLConnection)
@@ -154,7 +158,7 @@ public class pa3test
 		 
 		      hConnection.setDoOutput( true );
 		      hConnection.setRequestMethod("POST");	
-		      System.out.println("Start Time = " + System.currentTimeMillis());
+		      startTime  = System.currentTimeMillis();		      
 		      outputStream = hConnection.getOutputStream();
 		      writer = new PrintWriter(new OutputStreamWriter(outputStream, charset),
 		              true);
@@ -163,14 +167,13 @@ public class pa3test
 		      
 		      int length = 0;
 		      List<String> response = finish(0);
-		      
+		      endTime  = System.currentTimeMillis();
 		      for (String line : response) {
 		    	  length += line.length();
 		          //System.out.println(line);
 		      }
 		      
-		      System.out.println("SERVER REPLIED: Length Retrieved = " + length + " bytes" );
-		      System.out.println("End Time = " + System.currentTimeMillis());
+		      System.out.println(args[1] + "," + length + startTime + "," + endTime + "," + (endTime-startTime));
 		      
 		  } catch (IOException ex) {
 		      System.out.println("ERROR: " + ex.getMessage());
@@ -179,12 +182,11 @@ public class pa3test
     }    
     
     public static void testRemove(String[] args) {
-
+	  	  long startTime, endTime;
 		  boundary = "===" + System.currentTimeMillis() + "===";
 		  
 	      try
 	      {
-		      System.out.println("Remove file " + args[1]);
 		      
 		      URL url = new URL( args[0] );
 		      File uploadFile = new File(args[1]);
@@ -194,7 +196,7 @@ public class pa3test
 		 
 		      hConnection.setDoOutput( true );
 		      hConnection.setRequestMethod("POST");	
-		      System.out.println("Start Time = " + System.currentTimeMillis());
+		      startTime  = System.currentTimeMillis();			      
 		      outputStream = hConnection.getOutputStream();
 		      writer = new PrintWriter(new OutputStreamWriter(outputStream, charset),
 		              true);
@@ -202,14 +204,13 @@ public class pa3test
 		      
 		      int length = 0;
 		      List<String> response = finish(0);
-		      
+		      endTime  = System.currentTimeMillis();		      
 		      for (String line : response) {
 		    	  length += line.length();
-		          System.out.println(line);
+		          //System.out.println(line);
 		      }
 		      
-		      System.out.println("SERVER REPLIED: Length Retrieved = " + length + " bytes" );
-		      System.out.println("End Time = " + System.currentTimeMillis());
+		      System.out.println(args[1] + "," + startTime + "," + endTime + "," + (endTime-startTime));
 		      
 		  } catch (IOException ex) {
 		      System.out.println("ERROR: " + ex.getMessage());
