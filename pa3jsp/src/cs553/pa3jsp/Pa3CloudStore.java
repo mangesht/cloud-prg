@@ -229,9 +229,9 @@ public class Pa3CloudStore extends HttpServlet {
                 
                 }
                 while ((str = reader.readLine()) != null) {
-                	str += "\n";
+                	str += "\n\r";
                 	if (storeInMemCache == true ) {
-                		memStr += str ;	
+                		memStr = memStr + str ;	
                 	}
                 	 
                		outStream.write(str.getBytes(), 0, str.length());
@@ -252,12 +252,32 @@ public class Pa3CloudStore extends HttpServlet {
   	    }else {
   	    	// File found in memCache, get the contents
   	    	//resp.getWrite().println("MemCache: File Found getting from here ");
-  	    	 OutputStream outStream = resp.getOutputStream();
+  	    	 
   	    	 String str;
-  	    	 Blob blob; 
+  	    	 Blob blob;
+  	    	 int content_len ;
+  	    	found  = 1 ; 
   	    	blob  = (Blob) memEnt.getProperty("content");
-  	    	str = blob.toString();
-  	    	outStream.write(blob.getBytes(), 0,Integer.valueOf((String)memEnt.getProperty("file-contentlen"))-1);
+  	    	byte[] buffer2 = blob.getBytes();
+  	    	content_len = (Integer) memEnt.getProperty("file-contentlen");
+  	    	
+  	    	String mimeType = "application/octet-stream";
+	        	resp.setContentType(mimeType);
+	            resp.setContentLength(buffer2.length );
+	            String headerKey = "Content-Disposition";
+	            String headerValue = String.format("attachment; filename=\"%s\"", filename);
+	            resp.setHeader(headerKey, headerValue);   	        	
+	            OutputStream outStream = resp.getOutputStream();
+	            
+  	    	if(content_len <= 1 ) { 
+  	    		//resp.getWriter().println("<p>Content Len = " + content_len +" </p>");
+  	    		outStream.write(((String)( "<p>Content Len = " + content_len +" </p>" 
+  	    				+ "\n" + "Blob len " + buffer2.length )).getBytes());
+  	    		
+  	    	}else{
+  	    		outStream.write(buffer2, 0,buffer2.length);	
+  	    	}
+  	    	
   	    }
    	    if (found == 0) {
    	   	    outputHeader(user, req,resp);   	    	
