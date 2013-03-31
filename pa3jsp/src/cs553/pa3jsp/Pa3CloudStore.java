@@ -237,7 +237,14 @@ public class Pa3CloudStore extends HttpServlet {
                		outStream.write(str.getBytes(), 0, str.length());
                 }        	
                 if (storeInMemCache == true ) {
-                	syncCache.put(filename, memStr);
+                	Entity d = new Entity(filename);
+                	Blob blob = new  Blob(memStr.getBytes());
+                   	d.setProperty("file-contentlen", Integer.valueOf(filesize ));
+                   	d.setProperty("file-name", filename);
+                   	d.setProperty("file-path", filename);
+                   	d.setProperty("file-store", "CloudStore");
+                   	d.setProperty("content", blob);
+                	syncCache.put(filename, d);
                 }
                 readChannel.close();     	        
    	    	}
@@ -247,8 +254,10 @@ public class Pa3CloudStore extends HttpServlet {
   	    	//resp.getWrite().println("MemCache: File Found getting from here ");
   	    	 OutputStream outStream = resp.getOutputStream();
   	    	 String str;
-  	    	str = (String) memEnt.getProperty("content");
-  	    	outStream.write(str.getBytes(), 0, str.length());
+  	    	 Blob blob; 
+  	    	blob  = (Blob) memEnt.getProperty("content");
+  	    	str = blob.toString();
+  	    	outStream.write(blob.getBytes(), 0,Integer.valueOf((String)memEnt.getProperty("file-contentlen"))-1);
   	    }
    	    if (found == 0) {
    	   	    outputHeader(user, req,resp);   	    	
@@ -350,6 +359,9 @@ public class Pa3CloudStore extends HttpServlet {
    	    }
    	    
         datastore.delete(k2);
+        if(syncCache.contains(filename)){
+        	syncCache.delete(filename);
+        }
 	    outputFooter(user,req, resp);          
 	}	
 	
