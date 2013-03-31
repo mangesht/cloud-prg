@@ -1,10 +1,10 @@
-@java pa3test http://pa3-cs553-jsp.appspot.com/fops_cloudstore 07mpFATjIt find 
-@java pa3test http://pa3-cs553-jsp.appspot.com/fops_cloudstore 0qQXaTNhUL find 
-@java pa3test http://pa3-cs553-jsp.appspot.com/fops_cloudstore 18d31GaHSY find 
-@java pa3test http://pa3-cs553-jsp.appspot.com/fops_cloudstore 2D7PqRvG1O find 
-@java pa3test http://pa3-cs553-jsp.appspot.com/fops_cloudstore 2FuohJezLy find 
-@java pa3test http://pa3-cs553-jsp.appspot.com/fops_cloudstore 326JyqzNgU find 
-@java pa3test http://pa3-cs553-jsp.appspot.com/fops_cloudstore 329wr3OFSp find 
-@java pa3test http://pa3-cs553-jsp.appspot.com/fops_cloudstore 4arSSqT343 find 
-@java pa3test http://pa3-cs553-jsp.appspot.com/fops_cloudstore 4ie4huzAph find 
-@java pa3test http://pa3-cs553-jsp.appspot.com/fops_cloudstore 64jztKfbLP find 
+@java pa3Test -u http://pa3-cs553-jsp.appspot.com/fops_cloudstore -f 07mpFATjIt -c find  -n 1 
+@java pa3Test -u http://pa3-cs553-jsp.appspot.com/fops_cloudstore -f 0qQXaTNhUL -c find  -n 1 
+@java pa3Test -u http://pa3-cs553-jsp.appspot.com/fops_cloudstore -f 18d31GaHSY -c find  -n 1 
+@java pa3Test -u http://pa3-cs553-jsp.appspot.com/fops_cloudstore -f 2D7PqRvG1O -c find  -n 1 
+@java pa3Test -u http://pa3-cs553-jsp.appspot.com/fops_cloudstore -f 2FuohJezLy -c find  -n 1 
+@java pa3Test -u http://pa3-cs553-jsp.appspot.com/fops_cloudstore -f 326JyqzNgU -c find  -n 1 
+@java pa3Test -u http://pa3-cs553-jsp.appspot.com/fops_cloudstore -f 329wr3OFSp -c find  -n 1 
+@java pa3Test -u http://pa3-cs553-jsp.appspot.com/fops_cloudstore -f 4arSSqT343 -c find  -n 1 
+@java pa3Test -u http://pa3-cs553-jsp.appspot.com/fops_cloudstore -f 4ie4huzAph -c find  -n 1 
+@java pa3Test -u http://pa3-cs553-jsp.appspot.com/fops_cloudstore -f 64jztKfbLP -c find  -n 1 
