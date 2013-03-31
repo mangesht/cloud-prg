@@ -16,6 +16,7 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import com.google.appengine.api.datastore.Blob;
 import com.google.appengine.api.datastore.DatastoreService;
 import com.google.appengine.api.datastore.DatastoreServiceFactory;
 import com.google.appengine.api.datastore.Entity;
@@ -332,10 +333,10 @@ public class Pa3CloudStore extends HttpServlet {
 
        	AppEngineFile writableFile =
                 fileService.createNewGSFile(optionsBuilder.build());
-/*        
+       
      
        	boolean lock = false;
-        resp.getWriter().println("<i>Writable Channel </i><br>" );
+        resp.getWriter().println("<i>Writable Channel  with lock false</i><br>" );
 
         FileWriteChannel writeChannel =
                 fileService.openWriteChannel(writableFile, lock);
@@ -363,15 +364,19 @@ public class Pa3CloudStore extends HttpServlet {
         
        	d.setProperty("file-contentlen", complete_len);
        	d.setProperty("file-name", item.getName());
-       	d.setProperty("file-path", path);
+       	d.setProperty("file-path", new Blob(path.getBytes()));
        	d.setProperty("file-store", "CloudStore");       	
        	datastore.put(d);       	
         // Now finalize
         resp.getWriter().println("<i>Finally Close</i><br>" );
+        lock = true;
+        resp.getWriter().println("<i>Writable Channel with lock true</i><br>" );
 
+        writeChannel =
+                fileService.openWriteChannel(writableFile, lock);
        	writeChannel.closeFinally();
         resp.getWriter().println("<br><i>File " +  item.getName() + " Added. Length =" + complete_len + "</i><br>" );
-*/        
+        
 	}
 	
 }
