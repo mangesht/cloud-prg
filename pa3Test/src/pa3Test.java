@@ -16,10 +16,10 @@ public class pa3Test {
 		 String url = ""; 
 		 String files[];
 		 String runCmd  = "";
-		 runTests tests[];
+		 //runTests tests[];
 		 String str =  new String ();
 		 argsLen = args.length ;
-		 files = new String [4];
+		 files = new String [5];
 		 
 		 while(idx <argsLen ) {
              System.out.println("Argument " + args[idx]);
@@ -55,10 +55,16 @@ public class pa3Test {
              }
              idx++;
 		 }
-		 
-		 tests = new runTests[numThreads];
+		 /*
+		 numThreads = 2 ; 
+		 url = "http://pa3-cs553-jsp.appspot.com/fops_cloudstore";
+		 runCmd = "insert";
+		 */ 
+		 runTests tests[] = new runTests[numThreads+1];
 		 // set tests parameters 
 		 for (idx=0;idx<numThreads ;idx++) {
+			 tests[idx] = new runTests() ; 
+			 System.out.println("url = " + url );
 			 tests[idx].setUrl(url);
 			 tests[idx].fileName = files[idx];
 			 tests[idx].cmd = runCmd ;
