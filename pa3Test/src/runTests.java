@@ -21,9 +21,9 @@ public class runTests extends Thread {
 	static String boundary;
 	static OutputStream outputStream;
 	static String LINE_FEED = "\r\n";
-	static PrintWriter writer;
+	PrintWriter writer;
 	static String charset = "UTF-8";
-	static HttpURLConnection hConnection;
+	HttpURLConnection hConnection;
 	
 	// User should set these parameters
 	public URL url;
@@ -123,7 +123,7 @@ public class runTests extends Thread {
 		      ex.printStackTrace();
 		  }    	
   }
-    public static List<String> finish(int footer) throws IOException {
+    public  List<String> finish(int footer) throws IOException {
         List<String> response = new ArrayList<String>();
  
         if (footer == 1)
