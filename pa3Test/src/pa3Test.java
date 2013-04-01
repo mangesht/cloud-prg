@@ -71,7 +71,7 @@ public class pa3Test {
 		 for (idx=0;idx<numThreads ;idx++) {
 			 
 			 tests[idx] = new runTests() ; 
-			 System.out.println("fileName = " + files[idx] );
+			// System.out.println("fileName = " + files[idx] );
 			 tests[idx].setUrl(url);
 			 tests[idx].fileName = files[idx];
 			 tests[idx].cmd = runCmd ;
