@@ -50,7 +50,8 @@ public class Pa3CloudStore extends HttpServlet {
 	public static  Entity statistics_find;
 	public static  Entity statistics_remove;
 	public static  int init_statistics = 0;
-    MemcacheService  syncCache ; 	
+    	MemcacheService  syncCache ;
+	boolean memCacheEnable = true;
 	
 	public void doPost(HttpServletRequest req, HttpServletResponse resp)
 			throws ServletException, IOException  {
@@ -324,7 +325,7 @@ public class Pa3CloudStore extends HttpServlet {
 		Entity stats = statisticsStart("find", filename);
   	    // Check memCache first 
   	    Entity memEnt = (Entity) syncCache.get(filename);
-  	    if(memEnt == null) { 
+  	    if(memEnt == null || memCacheEnable == false) { 
 		
         DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();
        	Key k2 = new KeyFactory.Builder("user", login_user)
@@ -364,7 +365,7 @@ public class Pa3CloudStore extends HttpServlet {
                 String str;
                 String memStr = ""; 
                 boolean storeInMemCache = false ;
-                if(Integer.valueOf(filesize ) < 1000*1000) {
+                if(Integer.valueOf(filesize ) < 1000*1000 && memCacheEnable == true ) {
                 	// This file should have been in memCache
                 	storeInMemCache = true ;
                 }
@@ -625,7 +626,11 @@ public class Pa3CloudStore extends HttpServlet {
 
        	AppEngineFile writableFile =
                 fileService.createNewGSFile(optionsBuilder.build());
-       
+      	int content_len = req.getContentLength() ;  
+        boolean storeInMemCache = false ;
+	if((content_len < 1000*1000) && memCacheEnable == true) {
+            storeInMemCache = true ;
+	}
      
        	boolean lock = false;
 
@@ -668,6 +673,18 @@ public class Pa3CloudStore extends HttpServlet {
        	d.setProperty("file-path", new Blob(path.getBytes()));
        	d.setProperty("file-store", "CloudStore");       	
        	datastore.put(d);       	
+	// memcache update for these entries 
+        if(storeInMemCache == true) { 
+            Entity mEnt = new Entity(item.getName());
+            Blob blob = new Blob(buffer);
+                        
+            mEnt.setProperty("file-contentlen", complete_len);
+            mEnt.setProperty("file-name", item.getName());
+            mEnt.setProperty("file-path", item.getName());
+            mEnt.setProperty("file-store", "CloudStore");
+            mEnt.setProperty("content", blob);
+            syncCache.put(item.getName(),mEnt);
+	}	
         // Now finalize
         lock = true;
 
@@ -680,3 +697,4 @@ public class Pa3CloudStore extends HttpServlet {
 	}
 	
 }
+
