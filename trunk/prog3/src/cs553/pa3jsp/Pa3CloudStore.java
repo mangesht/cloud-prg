@@ -388,8 +388,8 @@ public class Pa3CloudStore extends HttpServlet {
    	    	
    	    	datastore.delete(result.getKey());
    	    }
-   		statistics_insert.setProperty("counter", 0);
-   		datastore.put(statistics_insert);
+   		//statistics_insert.setProperty("counter", 0);
+   		//datastore.put(statistics_insert);
 	    
        /* Find */
   	    q = new Query("stats_index_find", k_find);
@@ -401,8 +401,8 @@ public class Pa3CloudStore extends HttpServlet {
    	    	datastore.delete(result.getKey());
    	    	
    	    }
-   		statistics_find.setProperty("counter", 0);
-   		datastore.put(statistics_find);
+   		//statistics_find.setProperty("counter", 0);
+   		//datastore.put(statistics_find);
 		    
        /* Remove */
   	    q = new Query("stats_index_remove", k_remove);
@@ -414,8 +414,8 @@ public class Pa3CloudStore extends HttpServlet {
    	    	datastore.delete(result.getKey());
 
    	    }
-   		statistics_remove.setProperty("counter", 0);
-   		datastore.put(statistics_remove);
+   		//statistics_remove.setProperty("counter", 0);
+   		//datastore.put(statistics_remove);
    		
 	    outputFooter(user,req, resp);	    
 	}
