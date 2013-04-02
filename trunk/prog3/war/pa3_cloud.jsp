@@ -111,6 +111,12 @@
     </div>
 </form>
 
+<form action="fops_cloudstore" method="post">
+    <div> 
+        <input type="hidden" name="fun" value="clear_statistics" />
+        <input type="submit" value="Clear Statistics"/>
+    </div>
+</form>
 </div>
 <%
     } else {

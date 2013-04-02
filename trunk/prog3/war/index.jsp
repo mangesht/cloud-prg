@@ -71,7 +71,6 @@
 		<select name="store">
 		  <option value="cloud">Google Cloud Storage</option>
 		  <option value="datastore">Datastore</option>
-		  <option value="blobstore">BlobStore</option>
 		</select>
         <input type="submit" value="Submit" />
     </div>

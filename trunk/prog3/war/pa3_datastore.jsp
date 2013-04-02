@@ -25,22 +25,30 @@
 <%
     UserService userService = UserServiceFactory.getUserService();
     User user = userService.getCurrentUser();
-    String store;
-    store = request.getParameter("store");
     if (user != null) {
       pageContext.setAttribute("user", user);
+%>
+
+<div id="welcome">
+<h1>PA3 File Storage -- Using Google Data Storage</h2>
+</div>
+
+<%
       DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();
       Key k = KeyFactory.createKey("user",  user.getNickname());
       try {
         Entity e =  datastore.get(k);
       } catch (EntityNotFoundException e1) {
-	    response.sendRedirect(userService.createLoginURL(request.getRequestURI()));
-      }
 %>
-<div id="welcome">
-<h1>PA3 File Storage -- Using Datastore</h2>
+<div id="Banner">
+<p>You are a new user.</p>
+<p>Your name is being added as User entity in the datastore.</p>
 </div>
-
+<%    
+      	Entity e = new Entity("user", user.getNickname());
+      	datastore.put(e);
+      }	
+%>
 <div id="Banner">
 <p>Hello, ${fn:escapeXml(user.nickname)}! </p>
 </div>
@@ -96,6 +104,19 @@
     </div>
 </form>
 
+<form action="fops_datastore" method="post">
+    <div> 
+        <input type="hidden" name="fun" value="statistics" />
+        <input type="submit" value="Statistics"/>
+    </div>
+</form>
+
+<form action="fops_datastore" method="post">
+    <div> 
+        <input type="hidden" name="fun" value="clear_statistics" />
+        <input type="submit" value="Clear Statistics"/>
+    </div>
+</form>
 </div>
 <%
     } else {
