@@ -51,11 +51,12 @@ public class Pa3CloudStore extends HttpServlet {
 	public static  Entity statistics_remove;
 	public static  int init_statistics = 0;
     	MemcacheService  syncCache ;
-	boolean memCacheEnable = true;
-	
+	boolean memCacheEnable = false;
+		
 	public void doPost(HttpServletRequest req, HttpServletResponse resp)
 			throws ServletException, IOException  {
         syncCache = MemcacheServiceFactory.getMemcacheService();
+        
 		if (init_statistics == 0) {
 			initStatistics();
 			init_statistics = 1;
