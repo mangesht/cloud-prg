@@ -415,11 +415,12 @@ public class Pa3DataStore extends HttpServlet {
    	    	String filesize = String.valueOf(
    	    	result.getProperty("file-contentlen"));
    	    	String filestore = (String) result.getProperty("file-store");
-   	    	
-    	    resp.getWriter().println("<tr><td>" + filename +
+   	    	if (filestore.equals("DataStore")) {
+   	    		resp.getWriter().println("<tr><td>" + filename +
     							"</td><td>" + filesize + "</td>" + 
     							"</td><td>" + filestore + "</td>" + 
     	    					"</tr>");
+   	    	}
    	    }
 	    resp.getWriter().println("</table>");
 	    outputFooter(user,req, resp);
