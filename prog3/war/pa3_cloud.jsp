@@ -63,6 +63,18 @@
 </div>
 
 <div id="ops">
+
+<form action="fops_cloudstore" method="post">
+    <div>
+		<select name="memcache-enable">
+		  <option value="Enable">Enable Memcache</option>
+		  <option value="Disable">Disable Memcache</option>
+		</select>
+        <input type="hidden" name="fun" value="memcache" />
+        <input type="submit" value="Update Memcache"/>
+    </div>
+</form>
+
 <form action="fops_cloudstore" enctype="multipart/form-data" method="post">
     <div>
         <input name="file_name" type="file"  value="Select a File" size="40">
