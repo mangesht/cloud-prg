@@ -129,16 +129,12 @@ public class Pa3CloudStore extends HttpServlet {
 		
 		if (ops.equals("find")) {
 			k_find =  KeyFactory.createKey("stats_op", "find");
-			resp.getWriter().println("statistics_find : Key k_find" + k_insert.getName()  + " ops = " + ops + "<br>");
-
 			try {
 				statistics_find = datastore.get(k_find);
 				/* should not output anything during find */
-				//resp.getWriter().println("statistics_find : Old Entity reused " + statistics_find.getNamespace() + "<br>");
 			} catch (EntityNotFoundException e) {
 				statistics_find = new Entity(k_find);
 				statistics_find.setProperty("counter", 0);
-				//resp.getWriter().println("statistics_find : New Entity created " + statistics_find.getNamespace() + "<br>");
 				datastore.put(statistics_find);				
 			}
 	    } else {
@@ -178,7 +174,6 @@ public class Pa3CloudStore extends HttpServlet {
         /* One key for operation */
       	/* That key contains entities that contains counter */
         
-		resp.getWriter().println("initStatistics = " + operation + " <br>");        
 		initStatistics(operation, resp);
 		
         if (operation.equals("insert")) {
@@ -191,10 +186,8 @@ public class Pa3CloudStore extends HttpServlet {
         } else if (operation.equals("find")){
         	nextCount = Integer.valueOf(String.valueOf(statistics_find.getProperty("counter")));
         	nextCount++;
-			resp.getWriter().println("nextCount = " + nextCount + " added to statistics_find <br>");
        		statistics_find.setProperty("counter", nextCount);
 	      	k = KeyFactory.createKey(k_find, "stats_index", nextCount);
-    	    resp.getWriter().println("new key created  " + k.getName() + " <br>");
         } else if (operation.equals("remove")){
         	nextCount = Integer.valueOf(String.valueOf(statistics_remove.getProperty("counter")));
         	nextCount++;
