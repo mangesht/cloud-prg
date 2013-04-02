@@ -77,7 +77,7 @@ public class Pa3CloudStore extends HttpServlet {
         	/*resp.sendRedirect(userService.createLoginURL(req.getRequestURI()));*/
         }
 
-        
+        initMemCacheEnable(user);
     	boolean isMultipart = ServletFileUpload.isMultipartContent(req);
     	try {
             if (isMultipart == true) {
@@ -96,6 +96,8 @@ public class Pa3CloudStore extends HttpServlet {
                 	performStatistics(user, req,resp);
                 } else if (ops.equals("clear_statistics")) {
                 	performClearStatistics(user, req,resp);
+                } if (ops.equals("memcache")) {
+                	performMemCacheToggle(user, req,resp);
                 }
             }
     	} catch (IOException e) {
@@ -162,17 +164,26 @@ public class Pa3CloudStore extends HttpServlet {
         	nextCount = Integer.valueOf(String.valueOf(statistics_insert.getProperty("counter")));
         	nextCount++;
        		statistics_insert.setProperty("counter", nextCount);
-	      	k = KeyFactory.createKey(k_insert, "stats_index_insert", nextCount);
+	      	k = new KeyFactory.Builder("stats_op", "insert")
+	      				.addChild("stats_index_insert", nextCount)
+	      				.getKey();
+			datastore.put(statistics_insert);	      	
         } else if (operation.equals("find")){
         	nextCount = Integer.valueOf(String.valueOf(statistics_find.getProperty("counter")));
         	nextCount++;
        		statistics_find.setProperty("counter", nextCount);
-	      	k = KeyFactory.createKey(k_find, "stats_index_find", nextCount);
-        } else if (operation.equals("remove")){
+	      	k = new KeyFactory.Builder("stats_op", "find")
+				.addChild("stats_index_find", nextCount)
+				.getKey();
+			datastore.put(statistics_find);	      	
+		} else if (operation.equals("remove")){
         	nextCount = Integer.valueOf(String.valueOf(statistics_remove.getProperty("counter")));
         	nextCount++;
        		statistics_remove.setProperty("counter", nextCount);
-	      	k = KeyFactory.createKey(k_remove, "stats_index_remove", nextCount);
+	      	k = new KeyFactory.Builder("stats_op", "remove")
+				.addChild("stats_index_remove", nextCount)
+				.getKey();
+			datastore.put(statistics_remove);	      	
         }
         
         if (null != k) {
@@ -377,7 +388,8 @@ public class Pa3CloudStore extends HttpServlet {
    	    	
    	    	datastore.delete(result.getKey());
    	    }
-	    
+   		statistics_insert.setProperty("counter", 0);
+   		datastore.put(statistics_insert);
 	    
        /* Find */
   	    q = new Query("stats_index_find", k_find);
@@ -389,6 +401,8 @@ public class Pa3CloudStore extends HttpServlet {
    	    	datastore.delete(result.getKey());
    	    	
    	    }
+   		statistics_find.setProperty("counter", 0);
+   		datastore.put(statistics_find);
 		    
        /* Remove */
   	    q = new Query("stats_index_remove", k_remove);
@@ -400,10 +414,92 @@ public class Pa3CloudStore extends HttpServlet {
    	    	datastore.delete(result.getKey());
 
    	    }
-		    
+   		statistics_remove.setProperty("counter", 0);
+   		datastore.put(statistics_remove);
+   		
 	    outputFooter(user,req, resp);	    
 	}
 	
+	public void initMemCacheEnable(User user)
+          		  throws IOException,
+                    ServletException         {
+   	    String login_user;
+		if (user == null)
+   	    {
+   	    	login_user = "harsha.matadhikari";
+   	    }
+   	    else
+   	    {
+   	    	login_user = user.getNickname();   	    	
+   	    }			
+        DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();
+       	Key k3 = new KeyFactory.Builder("user", login_user)
+       						.addChild("memcache", 1)
+       						.getKey();  	    
+       	Entity  m;
+        
+       	try {
+         	  m = datastore.get(k3);
+        } catch (EntityNotFoundException ex) {
+     		  m = new Entity(k3);
+        	  m.setProperty("memcache_enable", "true");
+        	  datastore.put(m);
+        }
+   	    
+       	String menable = (String) m.getProperty("memcache_enable");
+       	
+       	if (menable.equals("true")) {
+       		memCacheEnable = true;
+       	} else if (menable.equals("false")) {
+       		memCacheEnable = false;
+       	}
+
+	}	
+	
+	public void performMemCacheToggle(User user,
+            HttpServletRequest req, 
+            HttpServletResponse resp)
+          		  throws IOException,
+                    ServletException         {
+   	    String login_user;
+		if (user == null)
+   	    {
+   	    	login_user = "harsha.matadhikari";
+   	    }
+   	    else
+   	    {
+   	    	login_user = user.getNickname();   	    	
+   	    }			
+        DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();
+       	Key k3 = new KeyFactory.Builder("user", login_user)
+			.addChild("memcache", 1)
+			.getKey();  	    
+   	    outputHeader(user, req,resp);
+   	   
+       	Entity  m;
+        
+       	try {
+         	  m = datastore.get(k3);
+        } catch (EntityNotFoundException ex) {
+     		  m = new Entity(k3);
+        }
+   	    
+       	String menable = req.getParameter("memcache-enable");
+       	
+       	if (menable.equals("Enable")) {
+       		memCacheEnable = true;
+       		m.setProperty("memcache_enable", "true");
+            resp.getWriter().println("<i> Updated Memcache to true</i><br><br>");
+       	} else if (menable.equals("Disable")) {
+       		memCacheEnable = false;
+       		m.setProperty("memcache_enable", "false");
+            resp.getWriter().println("<i> Updated Memcache to false</i><br><br>");
+       	}
+  	    datastore.put(m);       	
+  
+        
+	    outputFooter(user,req, resp);
+	}	
 	
 	public void performListing(User user,
             HttpServletRequest req, 
@@ -724,10 +820,16 @@ public class Pa3CloudStore extends HttpServlet {
         resp.getWriter().println("<i> is form field = " + item.isFormField() + "</i><br>");  
         resp.getWriter().println("<i> filename = " + item.getName() + "</i><br>");
         resp.getWriter().println("<i> content-length = " + req.getContentLength() + "</i><br>");
-        if(syncCache.get(item.getName()) == null ) {
-        	resp.getWriter().println("<i> Memcache : Not found here </i><br>");
-        }else { 
-        	resp.getWriter().println("<i> Memcache : File already added </i><br>");
+        if (memCacheEnable == true)
+        {
+        	resp.getWriter().println("<i> Memcache : Enabled </i><br>");        	
+	        if(syncCache.get(item.getName()) == null ) {
+	        	resp.getWriter().println("<i> Memcache : " + item.getName() + " Not found in memcache </i><br>");
+	        }else { 
+	        	resp.getWriter().println("<i> Memcache : " + item.getName() + " Found in memcache </i><br>");
+	        }
+        } else {
+        	resp.getWriter().println("<i> Memcache : Disabled </i><br>");        	
         }
         resp.getWriter().println("<i> Should invoke  storeInCloudStore </i><br>");
 	
