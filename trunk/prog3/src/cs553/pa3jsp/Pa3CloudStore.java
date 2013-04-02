@@ -94,6 +94,8 @@ public class Pa3CloudStore extends HttpServlet {
                 	performRemove(user, req,resp);
                 } else if (ops.equals("statistics")) {
                 	performStatistics(user, req,resp);
+                } else if (ops.equals("clear_statistics")) {
+                	performClearStatistics(user, req,resp);
                 }
             }
     	} catch (IOException e) {
@@ -160,17 +162,17 @@ public class Pa3CloudStore extends HttpServlet {
         	nextCount = Integer.valueOf(String.valueOf(statistics_insert.getProperty("counter")));
         	nextCount++;
        		statistics_insert.setProperty("counter", nextCount);
-	      	k = KeyFactory.createKey(k_insert, "stats_index", nextCount);
+	      	k = KeyFactory.createKey(k_insert, "stats_index_insert", nextCount);
         } else if (operation.equals("find")){
         	nextCount = Integer.valueOf(String.valueOf(statistics_find.getProperty("counter")));
         	nextCount++;
        		statistics_find.setProperty("counter", nextCount);
-	      	k = KeyFactory.createKey(k_find, "stats_index", nextCount);
+	      	k = KeyFactory.createKey(k_find, "stats_index_find", nextCount);
         } else if (operation.equals("remove")){
         	nextCount = Integer.valueOf(String.valueOf(statistics_remove.getProperty("counter")));
         	nextCount++;
        		statistics_remove.setProperty("counter", nextCount);
-	      	k = KeyFactory.createKey(k_remove, "stats_index", nextCount);
+	      	k = KeyFactory.createKey(k_remove, "stats_index_remove", nextCount);
         }
         
         if (null != k) {
@@ -248,10 +250,10 @@ public class Pa3CloudStore extends HttpServlet {
         DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();
         
         /* Insert */
-  	    Query q = new Query("stats_index", k_insert);
+  	    Query q = new Query("stats_index_insert", k_insert);
    	    PreparedQuery pq = datastore.prepare(q); 
    	    outputHeader(user, req,resp);
-        resp.getWriter().println("<i> Statistics for Insert </i><br><br>");  
+        resp.getWriter().println("<br><br><i> Statistics for Insert </i><br>");  
         
         resp.getWriter().println("<table border=1><tr>" +
         		"<td>Index</td>" +
@@ -264,10 +266,9 @@ public class Pa3CloudStore extends HttpServlet {
         		"</tr> ");
         
    	    for (Entity result : pq.asIterable()) {
-   	    	
-   	    	long totalTime;
-   	    	totalTime = (Long.valueOf(String.valueOf(result.getProperty("endTime")))) - 
-   	    			(Long.valueOf(String.valueOf(result.getProperty("endTime"))));
+   	    	Long endTime, startTime, totalTime;
+   	    	endTime = (Long.valueOf(String.valueOf(result.getProperty("endTime")))); 
+   	    	startTime = (Long.valueOf(String.valueOf(result.getProperty("startTime"))));
    	    	
     	    resp.getWriter().println("<tr>" +
     	    				    "<td>" + result.getProperty("stats_index") + 
@@ -276,16 +277,16 @@ public class Pa3CloudStore extends HttpServlet {
     							"</td><td>" + result.getProperty("operation") + "</td>" + 
     							"</td><td>" + result.getProperty("startTime") + "</td>" + 
     							"</td><td>" + result.getProperty("endTime") + "</td>" +
-    							"</td><td>" + totalTime + "</td>" +
+    							"</td><td>" + (endTime - startTime) + "</td>" +
     	    					"</tr>");
    	    }
 	    resp.getWriter().println("</table>");
 
 	    
        /* Find */
-  	    q = new Query("stats_index", k_find);
+  	    q = new Query("stats_index_find", k_find);
    	    pq = datastore.prepare(q); 
-        resp.getWriter().println("<i> Statistics for Find </i><br><br>");  
+        resp.getWriter().println("<br><br><i> Statistics for Find </i><br>");  
         
         resp.getWriter().println("<table border=1><tr>" +
         		"<td>Index</td>" +
@@ -299,9 +300,9 @@ public class Pa3CloudStore extends HttpServlet {
         
    	    for (Entity result : pq.asIterable()) {
    	    	
-   	    	long totalTime;
-   	    	totalTime = (Long.valueOf(String.valueOf(result.getProperty("endTime")))) - 
-   	    			(Long.valueOf(String.valueOf(result.getProperty("endTime"))));
+   	    	Long endTime, startTime, totalTime;
+   	    	endTime = (Long.valueOf(String.valueOf(result.getProperty("endTime")))); 
+   	    	startTime = (Long.valueOf(String.valueOf(result.getProperty("startTime"))));
    	    	
     	    resp.getWriter().println("<tr>" +
     	    				    "<td>" + result.getProperty("stats_index") + 
@@ -310,15 +311,15 @@ public class Pa3CloudStore extends HttpServlet {
     							"</td><td>" + result.getProperty("operation") + "</td>" + 	    							
     							"</td><td>" + result.getProperty("startTime") + "</td>" + 
     							"</td><td>" + result.getProperty("endTime") + "</td>" +
-    							"</td><td>" + totalTime + "</td>" +
+    							"</td><td>" + (endTime - startTime) + "</td>" +
     	    					"</tr>");
    	    }
 	    resp.getWriter().println("</table>");
 		    
        /* Remove */
-  	    q = new Query("stats_index", k_remove);
+  	    q = new Query("stats_index_remove", k_remove);
    	    pq = datastore.prepare(q); 
-        resp.getWriter().println("<i> Statistics for Remove </i><br><br>");  
+        resp.getWriter().println("<br><br><i> Statistics for Remove </i><br>");  
         
         resp.getWriter().println("<table border=1><tr>" +
         		"<td>Index</td>" +
@@ -332,9 +333,9 @@ public class Pa3CloudStore extends HttpServlet {
         
    	    for (Entity result : pq.asIterable()) {
    	    	
-   	    	long totalTime;
-   	    	totalTime = (Long.valueOf(String.valueOf(result.getProperty("endTime")))) - 
-   	    			(Long.valueOf(String.valueOf(result.getProperty("endTime"))));
+   	    	Long endTime, startTime, totalTime;
+   	    	endTime = (Long.valueOf(String.valueOf(result.getProperty("endTime")))); 
+   	    	startTime = (Long.valueOf(String.valueOf(result.getProperty("startTime"))));
    	    	
     	    resp.getWriter().println("<tr>" +
     	    				    "<td>" + result.getProperty("stats_index") + 
@@ -343,13 +344,66 @@ public class Pa3CloudStore extends HttpServlet {
     							"</td><td>" + result.getProperty("operation") + "</td>" + 		    							
     							"</td><td>" + result.getProperty("startTime") + "</td>" + 
     							"</td><td>" + result.getProperty("endTime") + "</td>" +
-    							"</td><td>" + totalTime + "</td>" +
+    							"</td><td>" + (endTime - startTime) + "</td>" +
     	    					"</tr>");
    	    }
 	    resp.getWriter().println("</table>");		    
 		    
 	    outputFooter(user,req, resp);	    
 	}
+	
+	public void performClearStatistics(User user,
+            HttpServletRequest req, 
+            HttpServletResponse resp)
+          		  throws IOException,
+                    ServletException         {
+   	    String login_user;
+		if (user == null)
+   	    {
+   	    	login_user = "harsha.matadhikari";
+   	    }
+   	    else
+   	    {
+   	    	login_user = user.getNickname();   	    	
+   	    }			
+        DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();
+   	    outputHeader(user, req,resp);        
+        /* Insert */
+        resp.getWriter().println("<i> Deleting Statistics for Insert </i><br><br>");          
+  	    Query q = new Query("stats_index_insert", k_insert);
+   	    PreparedQuery pq = datastore.prepare(q); 
+        
+   	    for (Entity result : pq.asIterable()) {
+   	    	
+   	    	datastore.delete(result.getKey());
+   	    }
+	    
+	    
+       /* Find */
+  	    q = new Query("stats_index_find", k_find);
+   	    pq = datastore.prepare(q); 
+        resp.getWriter().println("<i> Deleting Statistics for Find </i><br><br>");  
+        
+   	    for (Entity result : pq.asIterable()) {
+   	    	
+   	    	datastore.delete(result.getKey());
+   	    	
+   	    }
+		    
+       /* Remove */
+  	    q = new Query("stats_index_remove", k_remove);
+   	    pq = datastore.prepare(q); 
+        resp.getWriter().println("<i> Deleting Statistics for Remove </i><br><br>");  
+        
+   	    for (Entity result : pq.asIterable()) {
+   	    	
+   	    	datastore.delete(result.getKey());
+
+   	    }
+		    
+	    outputFooter(user,req, resp);	    
+	}
+	
 	
 	public void performListing(User user,
             HttpServletRequest req, 
@@ -388,7 +442,7 @@ public class Pa3CloudStore extends HttpServlet {
 	    resp.getWriter().println("</table>");
 	    outputFooter(user,req, resp);
 	}
-
+	
 	public void performFind(User user,
             HttpServletRequest req, 
             HttpServletResponse resp)
@@ -400,6 +454,7 @@ public class Pa3CloudStore extends HttpServlet {
         String buffer;		
   	    String filename=req.getParameter("file_name");
    	    String login_user;
+   	    String filesize = "0";
 		if (user == null)
    	    {
    	    	login_user = "harsha.matadhikari";
@@ -429,7 +484,7 @@ public class Pa3CloudStore extends HttpServlet {
    	    		/* Datastore retieval */
    	    	} else if (filestore.equals("CloudStore")) {
    	    		/* Cloudstore retieval */
-   	   	    	String filesize = String.valueOf(
+   	   	    	filesize = String.valueOf(
    	   	   	    	result.getProperty("file-contentlen"));   	    		
    	            FileService fileService = FileServiceFactory.getFileService();   	    		
    	    		String cloud_filename = "/gs/" + BUCKETNAME + "/" + filename;
@@ -469,6 +524,7 @@ public class Pa3CloudStore extends HttpServlet {
                    	d.setProperty("file-contentlen", Integer.valueOf(filesize ));
                    	d.setProperty("file-name", filename);
                    	d.setProperty("file-path", filename);
+                   	
                    	d.setProperty("file-store", "CloudStore");
                    	d.setProperty("content", blob);
                 	syncCache.put(filename, d);
@@ -483,11 +539,12 @@ public class Pa3CloudStore extends HttpServlet {
   	    	 String str;
   	    	 Blob blob;
   	    	 int content_len ;
-  	    	found  = 1 ; 
-  	    	blob  = (Blob) memEnt.getProperty("content");
-  	    	byte[] buffer2 = blob.getBytes();
-  	    	content_len = (Integer) memEnt.getProperty("file-contentlen");
-  	    	
+  	    	 found  = 1 ; 
+  	    	 blob  = (Blob) memEnt.getProperty("content");
+  	    	 byte[] buffer2 = blob.getBytes();
+  	    	 content_len = (Integer) memEnt.getProperty("file-contentlen");
+  	    	 filesize = String.valueOf(content_len);
+  	    	 
   	    	String mimeType = "application/octet-stream";
 	        	resp.setContentType(mimeType);
 	            resp.setContentLength(buffer2.length );
@@ -512,7 +569,8 @@ public class Pa3CloudStore extends HttpServlet {
 					                              " Not Found ...</p>");
     	    outputFooter(user,req, resp);     	    
    	    }	
-		statisticsEnd(stats, complete_len);
+   	    int intFileSize = Integer.valueOf(filesize);
+		statisticsEnd(stats, intFileSize);
     
 	}
 	
@@ -687,7 +745,7 @@ public class Pa3CloudStore extends HttpServlet {
         byte[] buffer = new byte[1024*924];
         int complete_len = 0;
         
-		Entity stats = statisticsStart("insert", item.getFieldName());  
+		Entity stats = statisticsStart("insert", item.getName());  
 		
 		
         DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();
