@@ -23,24 +23,32 @@
 <body>
 
 <%
-UserService userService = UserServiceFactory.getUserService();
-User user = userService.getCurrentUser();
-String store;
-store = request.getParameter("store");
-if (user != null) {
-pageContext.setAttribute("user", user);
-DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();
-Key k = KeyFactory.createKey("user", user.getNickname());
-try {
-Entity e = datastore.get(k);
-} catch (EntityNotFoundException e1) {
-response.sendRedirect(userService.createLoginURL(request.getRequestURI()));
-}
+    UserService userService = UserServiceFactory.getUserService();
+    User user = userService.getCurrentUser();
+    if (user != null) {
+      pageContext.setAttribute("user", user);
 %>
+
 <div id="welcome">
-<h1>PA3 File Storage -- Using Datastore</h2>
+<h1>PA3 File Storage -- Using Google Data Storage</h2>
 </div>
 
+<%
+      DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();
+      Key k = KeyFactory.createKey("user",  user.getNickname());
+      try {
+        Entity e =  datastore.get(k);
+      } catch (EntityNotFoundException e1) {
+%>
+<div id="Banner">
+<p>You are a new user.</p>
+<p>Your name is being added as User entity in the datastore.</p>
+</div>
+<%    
+      	Entity e = new Entity("user", user.getNickname());
+      	datastore.put(e);
+      }	
+%>
 <div id="Banner">
 <p>Hello, ${fn:escapeXml(user.nickname)}! </p>
 </div>
@@ -56,57 +64,69 @@ response.sendRedirect(userService.createLoginURL(request.getRequestURI()));
 
 <div id="ops">
 <form action="fops_datastore" enctype="multipart/form-data" method="post">
-<div>
-<input name="file_name" type="file" value="Select a File" size="40">
-</input> &nbsp;
-<input type="hidden" name="fun" value="insert" />
-<input type="hidden" name="file_size" value="insert" />
-<input type="submit" value="Submit" />
-</div>
+    <div>
+        <input name="file_name" type="file"  value="Select a File" size="40">
+        </input> &nbsp;
+        <input type="hidden" name="fun" value="insert" />
+        <input type="hidden" name="file_size" value="insert" />
+        <input type="submit" value="Submit" />
+    </div>
 </form>
 
 <form action="fops_datastore" method="post">
-<div>
-<input name="file_name" type="text"></input> &nbsp;
-<input type="hidden" name="fun" value="check" />
-<input type="submit" value="Check File"/>
-</div>
+    <div>
+        <input name="file_name" type="text"></input> &nbsp;
+        <input type="hidden" name="fun" value="check" />
+        <input type="submit" value="Check File"/>
+    </div>
 </form>
 
 <form action="fops_datastore" method="post">
-<div>
-<input name="file_name" type="text"></input> &nbsp;
-<input type="hidden" name="fun" value="find"/>
-<input type="submit" value="Find File"/>
-</div>
+    <div>
+        <input name="file_name" type="text"></input> &nbsp;
+        <input type="hidden" name="fun" value="find"/>
+        <input type="submit" value="Find File"/>
+    </div>
 </form>
 
 <form action="fops_datastore" method="post">
-<div>
-<input name="file_name" type="text"></input> &nbsp;
-<input type="hidden" name="fun" value="remove"/>
-<input type="submit" value="Remove File"/>
-</div>
+    <div>
+        <input name="file_name" type="text"></input> &nbsp;
+        <input type="hidden" name="fun" value="remove"/>
+        <input type="submit" value="Remove File"/>
+    </div>
 </form>
 
 <form action="fops_datastore" method="post">
-<div>
-<input type="hidden" name="fun" value="listing" />
-<input type="submit" value="Listing"/>
-</div>
+    <div> 
+        <input type="hidden" name="fun" value="listing" />
+        <input type="submit" value="Listing"/>
+    </div>
 </form>
 
+<form action="fops_datastore" method="post">
+    <div> 
+        <input type="hidden" name="fun" value="statistics" />
+        <input type="submit" value="Statistics"/>
+    </div>
+</form>
+
+<form action="fops_datastore" method="post">
+    <div> 
+        <input type="hidden" name="fun" value="clear_statistics" />
+        <input type="submit" value="Clear Statistics"/>
+    </div>
+</form>
 </div>
 <%
-} else {
+    } else {
 %>
-<p>Hello! Please
+<p>Hello! Please 
 <a href="<%= userService.createLoginURL(request.getRequestURI()) %>">Sign in</a>
-to continue.</p>
+ to continue.</p>
 <%
-}
+    }
 %>
 
 </body>
 </html>
-
