@@ -23,12 +23,12 @@
 <body>
 
 <%
-UserService userService = UserServiceFactory.getUserService();
-User user = userService.getCurrentUser();
-String store;
-store = request.getParameter("store");
-if (user != null) {
-pageContext.setAttribute("user", user);
+    UserService userService = UserServiceFactory.getUserService();
+    User user = userService.getCurrentUser();
+    String store;
+    store = request.getParameter("store");
+    if (user != null) {
+      pageContext.setAttribute("user", user);
 %>
 
 <div id="welcome">
@@ -36,20 +36,20 @@ pageContext.setAttribute("user", user);
 </div>
 
 <%
-DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();
-Key k = KeyFactory.createKey("user", user.getNickname());
-try {
-Entity e = datastore.get(k);
-} catch (EntityNotFoundException e1) {
+      DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();
+      Key k = KeyFactory.createKey("user",  user.getNickname());
+      try {
+      Entity e =  datastore.get(k);
+      } catch (EntityNotFoundException e1) {
 %>
 <div id="Banner">
 <p>You are a new user.</p>
 <p>Your name is being added as User entity in the datastore.</p>
 </div>
-<%
-Entity e = new Entity("user", user.getNickname());
-datastore.put(e);
-}
+<%    
+      	Entity e = new Entity("user", user.getNickname());
+      	datastore.put(e);
+      }	
 %>
 <div id="Banner">
 <p>Hello, ${fn:escapeXml(user.nickname)}! </p>
@@ -66,26 +66,25 @@ datastore.put(e);
 
 <div id="ops">
 <form action="/storeselect" method="post">
-<div>
-
-<select name="store">
-<option value="cloud">Google Cloud Storage</option>
-<option value="datastore">Datastore</option>
-<option value="blobstore">BlobStore</option>
-</select>
-<input type="submit" value="Submit" />
-</div>
+    <div>
+    
+		<select name="store">
+		  <option value="cloud">Google Cloud Storage</option>
+		  <option value="datastore">Datastore</option>
+		</select>
+        <input type="submit" value="Submit" />
+    </div>
 </form>
 
 </div>
 <%
-} else {
+    } else {
 %>
-<p>Hello! Please
+<p>Hello! Please 
 <a href="<%= userService.createLoginURL(request.getRequestURI()) %>">Sign in</a>
-to continue.</p>
+ to continue.</p>
 <%
-}
+    }
 %>
 
 </body>
