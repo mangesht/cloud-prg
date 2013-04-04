@@ -32,6 +32,14 @@ import com.google.appengine.api.datastore.PreparedQuery;
 
 @SuppressWarnings("serial")
 public class Pa3DataStore extends HttpServlet {
+	public static  Entity statistics_insert;
+	public static  Entity statistics_find;
+	public static  Entity statistics_remove;
+	public static  Key k_insert;
+	public static  Key k_find;
+	public static  Key k_remove;
+	
+	public static  int init_statistics = 0;
 	public void doPost(HttpServletRequest req, HttpServletResponse resp)
 			throws ServletException, IOException  {
 		fileOpsUsingDataStore(req,resp);
@@ -42,43 +50,151 @@ public class Pa3DataStore extends HttpServlet {
 			throws ServletException, IOException  {
         UserService userService = UserServiceFactory.getUserService();
         User user = userService.getCurrentUser();
+        /* Temporarily, ignore the case of user being NULL.
+           Our test automation program does not implement the          
+           oauth logic yet.
+         */
+        if (user == null)
+        {
+        	/*resp.sendRedirect(userService.createLoginURL(req.getRequestURI()));*/
+        }
 
-        if (user != null) {
-        	boolean isMultipart = ServletFileUpload.isMultipartContent(req);
-        	try {
-	            if (isMultipart == true) {
-	            	performInsert(user, req,resp);
-	            } else {
-	                String ops=req.getParameter("fun");
-	                if (ops.equals("listing")) {
-	                	performListing(user, req,resp);
-	                } else if (ops.equals("check")) {
-	                	performCheck(user, req,resp);
-	                } else if (ops.equals("find")) {
-	                	performFind(user, req,resp);
-	                } else if (ops.equals("remove")) {
-	                	performRemove(user, req,resp);
-	                }
-	            }
-        	} catch (IOException e) {
-        		throw new ServletException("Cannot parse multipart request: " + e.getMessage());
-        	}
-        } else {
-            resp.sendRedirect(userService.createLoginURL(req.getRequestURI()));
-        }		
+        
+    	boolean isMultipart = ServletFileUpload.isMultipartContent(req);
+    	try {
+            if (isMultipart == true) {
+            	performInsert(user, req,resp);
+            } else {
+                String ops=req.getParameter("fun");
+                if (ops.equals("listing")) {
+                	performListing(user, req,resp);
+                } else if (ops.equals("check")) {
+                	performCheck(user, req,resp);
+                } else if (ops.equals("find")) {
+                	performFind(user, req,resp);
+                } else if (ops.equals("remove")) {
+                	performRemove(user, req,resp);
+                } else if (ops.equals("statistics")) {
+                	performStatistics(user, req,resp);
+                } else if (ops.equals("clear_statistics")) {
+                	performClearStatistics(user, req,resp);
+                }
+            }
+    	} catch (IOException e) {
+    		throw new ServletException("Cannot parse multipart request: " + e.getMessage());
+    	}
 	}
+	
+	public void initStatistics(String ops) {
+		/* We store the statistics in datastore */
+		DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();
+		/* One key for operation */
+		
+		/* That key contains entities that contains counter */
+		if (ops.equals("insert")) {
+			k_insert = KeyFactory.createKey("ds_stats_op", "insert");
+			try {
+				statistics_insert = datastore.get(k_insert);
+			} catch (EntityNotFoundException e) {
+				statistics_insert = new Entity(k_insert);
+				statistics_insert.setProperty("counter", 0);
+				datastore.put(statistics_insert);
+			}
+	    }
+	    
+		if (ops.equals("find")) {
+			k_find =  KeyFactory.createKey("ds_stats_op", "find");
+			try {
+				statistics_find = datastore.get(k_find);
+				/* should not output anything during find */
+			} catch (EntityNotFoundException e) {
+				statistics_find = new Entity(k_find);
+				statistics_find.setProperty("counter", 0);
+				datastore.put(statistics_find);				
+			}
+	    }
+
+		if (ops.equals("remove")) {
+			k_remove = KeyFactory.createKey("ds_stats_op", "remove");
+			try {
+				statistics_remove = datastore.get(k_remove);
+			} catch (EntityNotFoundException e) {
+				statistics_remove = new Entity(k_remove);
+				statistics_remove.setProperty("counter", 0);
+				datastore.put(statistics_remove);					
+			}		
+	    }
+
+	}	
+	
+	public Entity statisticsStart(String operation,
+								String filename) {
+        /* We store the statistics in datastore */
+        DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();
+        Entity  s =  null;
+        Entity  counter;
+        Key k = null;
+        int nextCount = 0;
+        /* One key for operation */
+      	/* That key contains entities that contains counter */
+        
+		initStatistics(operation);
+		
+        if (operation.equals("insert")) {
+        	nextCount = Integer.valueOf(String.valueOf(statistics_insert.getProperty("counter")));
+        	nextCount++;
+       		statistics_insert.setProperty("counter", nextCount);
+	      	k = KeyFactory.createKey(k_insert, "ds_stats_index_insert", nextCount);
+        } else if (operation.equals("find")){
+        	nextCount = Integer.valueOf(String.valueOf(statistics_find.getProperty("counter")));
+        	nextCount++;
+       		statistics_find.setProperty("counter", nextCount);
+	      	k = KeyFactory.createKey(k_find, "ds_stats_index_find", nextCount);
+        } else if (operation.equals("remove")){
+        	nextCount = Integer.valueOf(String.valueOf(statistics_remove.getProperty("counter")));
+        	nextCount++;
+       		statistics_remove.setProperty("counter", nextCount);
+	      	k = KeyFactory.createKey(k_remove, "ds_stats_index_remove", nextCount);
+        }
+        
+        if (null != k) {
+	   		s = new Entity(k);
+	   		s.setProperty("stats_index", nextCount);
+	   		s.setProperty("startTime", System.currentTimeMillis());
+	        s.setProperty("filename", filename);
+	        s.setProperty("operation", operation);
+        }
+   		return s;
+	}
+	
+	public void statisticsEnd(Entity s, int datasize) {
+        DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();
+		s.setProperty("endTime", System.currentTimeMillis());
+		s.setProperty("filesize", datasize);
+      	datastore.put(s);
+      	return;
+    }
 	
 	public void outputHeader(User user,
 			HttpServletRequest req,
 			HttpServletResponse resp) 
 	        		 throws ServletException, IOException {
+   	    String login_user;
+		if (user == null)
+   	    {
+   	    	login_user = "harsha.matadhikari";
+   	    }
+   	    else
+   	    {
+   	    	login_user = user.getNickname();   	    	
+   	    }			
         resp.setContentType("text/html");
         resp.getWriter().println("<div id=\"welcome\">");
      	resp.getWriter().println("<h1>PA3 File Storage -- Using Datastore</h2>");
         resp.getWriter().println("</div>");
         
         resp.getWriter().println("<div id=\"Banner\">");
-        resp.getWriter().println("<p> Hello " + user.getNickname() + "</p>");
+        resp.getWriter().println("<p> Hello " + login_user + "</p>");
 			
         resp.getWriter().println("</div>");
         
@@ -99,13 +215,194 @@ public class Pa3DataStore extends HttpServlet {
         resp.getWriter().println("</div>");			
 	}
 	
+	public void performStatistics(User user,
+            HttpServletRequest req, 
+            HttpServletResponse resp)
+          		  throws IOException,
+                    ServletException         {
+   	    String login_user;
+		if (user == null)
+   	    {
+   	    	login_user = "harsha.matadhikari";
+   	    }
+   	    else
+   	    {
+   	    	login_user = user.getNickname();   	    	
+   	    }			
+        DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();
+        
+        /* Insert */
+  	    Query q = new Query("ds_stats_index_insert", k_insert);
+   	    PreparedQuery pq = datastore.prepare(q); 
+   	    outputHeader(user, req,resp);
+        resp.getWriter().println("<br><br><i> Statistics for Insert </i><br>");  
+        
+        resp.getWriter().println("<table border=1><tr>" +
+        		"<td>Index</td>" +
+        		"<td>Filename</td>" +
+        		"<td>Filesize</td>" +
+        		"<td>Operation</td>" +
+        		"<td>StartTime</td>" +
+        		"<td>EndTime</td>" +
+        		"<td>TotalTime</td>" +
+        		"</tr> ");
+        
+   	    for (Entity result : pq.asIterable()) {
+   	    	Long endTime, startTime, totalTime;
+   	    	endTime = (Long.valueOf(String.valueOf(result.getProperty("endTime")))); 
+   	    	startTime = (Long.valueOf(String.valueOf(result.getProperty("startTime"))));
+   	    	
+    	    resp.getWriter().println("<tr>" +
+    	    				    "<td>" + result.getProperty("stats_index") + 
+    							"</td><td>" + result.getProperty("filename") + "</td>" + 
+    							"</td><td>" + result.getProperty("filesize") + "</td>" + 
+    							"</td><td>" + result.getProperty("operation") + "</td>" + 
+    							"</td><td>" + result.getProperty("startTime") + "</td>" + 
+    							"</td><td>" + result.getProperty("endTime") + "</td>" +
+    							"</td><td>" + (endTime - startTime) + "</td>" +
+    	    					"</tr>");
+   	    }
+	    resp.getWriter().println("</table>");
+
+	    
+       /* Find */
+  	    q = new Query("ds_stats_index_find", k_find);
+   	    pq = datastore.prepare(q); 
+        resp.getWriter().println("<br><br><i> Statistics for Find </i><br>");  
+        
+        resp.getWriter().println("<table border=1><tr>" +
+        		"<td>Index</td>" +
+        		"<td>Filename</td>" +
+        		"<td>Filesize</td>" +
+        		"<td>Operation</td>" +	        		
+        		"<td>StartTime</td>" +
+        		"<td>EndTime</td>" +
+        		"<td>TotalTime</td>" +
+        		"</tr> ");
+        
+   	    for (Entity result : pq.asIterable()) {
+   	    	
+   	    	Long endTime, startTime, totalTime;
+   	    	endTime = (Long.valueOf(String.valueOf(result.getProperty("endTime")))); 
+   	    	startTime = (Long.valueOf(String.valueOf(result.getProperty("startTime"))));
+   	    	
+    	    resp.getWriter().println("<tr>" +
+    	    				    "<td>" + result.getProperty("stats_index") + 
+    							"</td><td>" + result.getProperty("filename") + "</td>" + 
+    							"</td><td>" + result.getProperty("filesize") + "</td>" + 
+    							"</td><td>" + result.getProperty("operation") + "</td>" + 	    							
+    							"</td><td>" + result.getProperty("startTime") + "</td>" + 
+    							"</td><td>" + result.getProperty("endTime") + "</td>" +
+    							"</td><td>" + (endTime - startTime) + "</td>" +
+    	    					"</tr>");
+   	    }
+	    resp.getWriter().println("</table>");
+		    
+       /* Remove */
+  	    q = new Query("ds_stats_index_remove", k_remove);
+   	    pq = datastore.prepare(q); 
+        resp.getWriter().println("<br><br><i> Statistics for Remove </i><br>");  
+        
+        resp.getWriter().println("<table border=1><tr>" +
+        		"<td>Index</td>" +
+        		"<td>Filename</td>" +
+        		"<td>Filesize</td>" +
+        		"<td>Operation</td>" +		        		
+        		"<td>StartTime</td>" +
+        		"<td>EndTime</td>" +
+        		"<td>TotalTime</td>" +
+        		"</tr> ");
+        
+   	    for (Entity result : pq.asIterable()) {
+   	    	
+   	    	Long endTime, startTime, totalTime;
+   	    	endTime = (Long.valueOf(String.valueOf(result.getProperty("endTime")))); 
+   	    	startTime = (Long.valueOf(String.valueOf(result.getProperty("startTime"))));
+   	    	
+    	    resp.getWriter().println("<tr>" +
+    	    				    "<td>" + result.getProperty("stats_index") + 
+    							"</td><td>" + result.getProperty("filename") + "</td>" + 
+    							"</td><td>" + result.getProperty("filesize") + "</td>" + 
+    							"</td><td>" + result.getProperty("operation") + "</td>" + 		    							
+    							"</td><td>" + result.getProperty("startTime") + "</td>" + 
+    							"</td><td>" + result.getProperty("endTime") + "</td>" +
+    							"</td><td>" + (endTime - startTime) + "</td>" +
+    	    					"</tr>");
+   	    }
+	    resp.getWriter().println("</table>");		    
+		    
+	    outputFooter(user,req, resp);	    
+	}
+	
+	public void performClearStatistics(User user,
+            HttpServletRequest req, 
+            HttpServletResponse resp)
+          		  throws IOException,
+                    ServletException         {
+   	    String login_user;
+		if (user == null)
+   	    {
+   	    	login_user = "harsha.matadhikari";
+   	    }
+   	    else
+   	    {
+   	    	login_user = user.getNickname();   	    	
+   	    }			
+        DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();
+   	    outputHeader(user, req,resp);        
+        /* Insert */
+        resp.getWriter().println("<i> Deleting Statistics for Insert </i><br><br>");          
+  	    Query q = new Query("ds_stats_index_insert", k_insert);
+   	    PreparedQuery pq = datastore.prepare(q); 
+        
+   	    for (Entity result : pq.asIterable()) {
+   	    	
+   	    	datastore.delete(result.getKey());
+   	    }
+	    
+	    
+       /* Find */
+  	    q = new Query("ds_stats_index_find", k_find);
+   	    pq = datastore.prepare(q); 
+        resp.getWriter().println("<i> Deleting Statistics for Find </i><br><br>");  
+        
+   	    for (Entity result : pq.asIterable()) {
+   	    	
+   	    	datastore.delete(result.getKey());
+   	    	
+   	    }
+		    
+       /* Remove */
+  	    q = new Query("ds_stats_index_remove", k_remove);
+   	    pq = datastore.prepare(q); 
+        resp.getWriter().println("<i> Deleting Statistics for Remove </i><br><br>");  
+        
+   	    for (Entity result : pq.asIterable()) {
+   	    	
+   	    	datastore.delete(result.getKey());
+
+   	    }
+		    
+	    outputFooter(user,req, resp);	    
+	}
+	
+	
 	public void performListing(User user,
             HttpServletRequest req, 
             HttpServletResponse resp)
           		  throws IOException,
                     ServletException         {
+   	    String login_user;
+		if (user == null)
+   	    {
+   	    	login_user = "harsha.matadhikari";
+   	    }
+   	    else
+   	    {
+   	    	login_user = user.getNickname();   	    	
+   	    }			
         DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();
-       	Key k3 = new KeyFactory.Builder("user", user.getNickname()).getKey();  	    
+       	Key k3 = new KeyFactory.Builder("user", login_user).getKey();  	    
   	    Query q = new Query("fileinfo", k3);
    	    PreparedQuery pq = datastore.prepare(q); 
    	    outputHeader(user, req,resp);
@@ -118,11 +415,12 @@ public class Pa3DataStore extends HttpServlet {
    	    	String filesize = String.valueOf(
    	    	result.getProperty("file-contentlen"));
    	    	String filestore = (String) result.getProperty("file-store");
-   	    	
-    	    resp.getWriter().println("<tr><td>" + filename +
+   	    	if (filestore.equals("DataStore")) {
+   	    		resp.getWriter().println("<tr><td>" + filename +
     							"</td><td>" + filesize + "</td>" + 
     							"</td><td>" + filestore + "</td>" + 
     	    					"</tr>");
+   	    	}
    	    }
 	    resp.getWriter().println("</table>");
 	    outputFooter(user,req, resp);
@@ -135,15 +433,26 @@ public class Pa3DataStore extends HttpServlet {
                     ServletException         {
 		int found = 0;
   	    String filename=req.getParameter("file_name");	
+   	    String login_user;
+   	    String filesize = "0";
+		if (user == null)
+   	    {
+   	    	login_user = "harsha.matadhikari";
+   	    }
+   	    else
+   	    {
+   	    	login_user = user.getNickname();   	    	
+   	    }			
+		Entity stats = statisticsStart("find", filename);
         DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();
-       	Key k2 = new KeyFactory.Builder("user", user.getNickname())
+       	Key k2 = new KeyFactory.Builder("user", login_user)
 		   .addChild("fileinfo", filename)
 		   .getKey();  	    
   	    Query q = new Query(k2);
    	    PreparedQuery pq = datastore.prepare(q); 
    	    for (Entity result : pq.asIterable()) {  
    	    	found = 1;	
-   	    	String filesize = String.valueOf(
+   	    	filesize = String.valueOf(
    	    	    	result.getProperty("file-contentlen"));
     		/* Datastore retieval */
         	Key k3 = new KeyFactory.Builder("user", user.getNickname())
@@ -181,6 +490,8 @@ public class Pa3DataStore extends HttpServlet {
 					                              " Not Found ...</p>");
     	    outputFooter(user,req, resp);     	    
    	    }	
+   	    int intFileSize = Integer.valueOf(filesize);
+		statisticsEnd(stats, intFileSize);
     
 	}
 	
@@ -190,10 +501,19 @@ public class Pa3DataStore extends HttpServlet {
           		  throws IOException,
                     ServletException         {
 		int found = 0;
+   	    String login_user;
+		if (user == null)
+   	    {
+   	    	login_user = "harsha.matadhikari";
+   	    }
+   	    else
+   	    {
+   	    	login_user = user.getNickname();   	    	
+   	    }			
   	    String filename=req.getParameter("file_name");	
         DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();
    	    outputHeader(user, req,resp);
-       	Key k2 = new KeyFactory.Builder("user", user.getNickname())
+       	Key k2 = new KeyFactory.Builder("user", login_user)
 		   .addChild("fileinfo", filename)
 		   .getKey();  	    
        	
@@ -227,12 +547,21 @@ public class Pa3DataStore extends HttpServlet {
           		  throws IOException,
                     ServletException         {
 		int found = 0;
+   	    String login_user;
+		if (user == null)
+   	    {
+   	    	login_user = "harsha.matadhikari";
+   	    }
+   	    else
+   	    {
+   	    	login_user = user.getNickname();   	    	
+   	    }			
   	    String filename=req.getParameter("file_name");	
         DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();
        	Key k1 = new KeyFactory.Builder("user", user.getNickname())
        						   .addChild("file", filename)
        						   .getKey();  	    
-       	Key k2 = new KeyFactory.Builder("user", user.getNickname())
+       	Key k2 = new KeyFactory.Builder("user", login_user)
 		   .addChild("fileinfo", filename)
 		   .getKey();  	    
        	
@@ -265,6 +594,15 @@ public class Pa3DataStore extends HttpServlet {
 			                  HttpServletResponse resp)
 			                		  throws IOException,
 			                          ServletException         {
+   	    String login_user;
+		if (user == null)
+   	    {
+   	    	login_user = "harsha.matadhikari";
+   	    }
+   	    else
+   	    {
+   	    	login_user = user.getNickname();   	    	
+   	    }			
     	// Create a factory for disk-based file items
    	    outputHeader(user, req,resp);   		
         resp.getWriter().println("<i> So you want do the operation " + "insert" + " ! Right?</i><br>");             	
@@ -275,7 +613,7 @@ public class Pa3DataStore extends HttpServlet {
     		while (iter.hasNext()) {
     			FileItemStream item = iter.next();
     			if (item.isFormField()) continue;
-        		storeInStore(user.getNickname(), item, req,resp);
+        		storeInStore(login_user, item, req,resp);
     		}
     	} catch (FileUploadException e) {
     		throw new ServletException("Cannot parse multipart request: " + e.getMessage());
@@ -320,6 +658,10 @@ public class Pa3DataStore extends HttpServlet {
        int chunk_count = 0;
        byte[] buffer = new byte[1024*924];
        int complete_len = 0;
+        
+		Entity stats = statisticsStart("insert", item.getName());  
+		
+		
        DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();
        Entity  f;
        Entity  d;
@@ -355,6 +697,7 @@ public class Pa3DataStore extends HttpServlet {
       	d.setProperty("file-store", "DataStore");       	
       	datastore.put(f);
       	datastore.put(d);       	
+		statisticsEnd(stats, complete_len);       	
         resp.getWriter().println("<br><i>File " +  item.getName() + " Added. Length =" + complete_len + "</i><br>" );
 	}	
 }
