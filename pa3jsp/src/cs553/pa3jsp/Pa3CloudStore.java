@@ -49,19 +49,17 @@ public class Pa3CloudStore extends HttpServlet {
 	public static  Entity statistics_insert;
 	public static  Entity statistics_find;
 	public static  Entity statistics_remove;
+	public static  Key k_insert;
+	public static  Key k_find;
+	public static  Key k_remove;
+	
 	public static  int init_statistics = 0;
-    	MemcacheService  syncCache ;
-	boolean memCacheEnable = false;
-		
+    MemcacheService  syncCache ;
+	boolean memCacheEnable = true;
+	
 	public void doPost(HttpServletRequest req, HttpServletResponse resp)
 			throws ServletException, IOException  {
         syncCache = MemcacheServiceFactory.getMemcacheService();
-        
-		if (init_statistics == 0) {
-			initStatistics();
-			init_statistics = 1;
-		}
-			
 		fileOpsUsingCloudStore(req,resp);
 	}
 
@@ -78,8 +76,12 @@ public class Pa3CloudStore extends HttpServlet {
         {
         	/*resp.sendRedirect(userService.createLoginURL(req.getRequestURI()));*/
         }
-
-        
+        /* Initialise memcache enable to true
+         * users can disable it run time using the combo box.
+         * this result needs to be persistant till it is changed again 
+         * so we store it in data store
+         */
+        initMemCacheEnable(user);
     	boolean isMultipart = ServletFileUpload.isMultipartContent(req);
     	try {
             if (isMultipart == true) {
@@ -96,6 +98,10 @@ public class Pa3CloudStore extends HttpServlet {
                 	performRemove(user, req,resp);
                 } else if (ops.equals("statistics")) {
                 	performStatistics(user, req,resp);
+                } else if (ops.equals("clear_statistics")) {
+                	performClearStatistics(user, req,resp);
+                } if (ops.equals("memcache")) {
+                	performMemCacheToggle(user, req,resp);
                 }
             }
     	} catch (IOException e) {
@@ -103,35 +109,47 @@ public class Pa3CloudStore extends HttpServlet {
     	}
 	}
 	
-	public void initStatistics() {
+	public void initStatistics(String ops) {
 		/* We store the statistics in datastore */
 		DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();
-		/* One key for operation */
-		Key k_insert = new KeyFactory.Builder("stats_op", "insert").getKey();
-		Key k_find = new KeyFactory.Builder("stats_op", "find").getKey();
-		Key k_remove = new KeyFactory.Builder("stats_op", "remove").getKey();
+		/* One key for each operation */
 		
 		/* That key contains entities that contains counter */
-		try {
-			statistics_insert = datastore.get(k_insert);
-		} catch (EntityNotFoundException e) {
-			statistics_insert = new Entity(k_insert);
-			statistics_insert.setProperty("counter", 0);
-		}
+		/* We store counter value as a property in the statistics entity 
+		 */
+		if (ops.equals("insert")) {
+			k_insert = KeyFactory.createKey("stats_op", "insert");
+			try {
+				statistics_insert = datastore.get(k_insert);
+			} catch (EntityNotFoundException e) {
+				statistics_insert = new Entity(k_insert);
+				statistics_insert.setProperty("counter", 0);
+				datastore.put(statistics_insert);
+			}
+	    }
+	    
+		if (ops.equals("find")) {
+			k_find =  KeyFactory.createKey("stats_op", "find");
+			try {
+				statistics_find = datastore.get(k_find);
+				/* should not output anything during find */
+			} catch (EntityNotFoundException e) {
+				statistics_find = new Entity(k_find);
+				statistics_find.setProperty("counter", 0);
+				datastore.put(statistics_find);				
+			}
+	    }
 
-		try {
-			statistics_find = datastore.get(k_find);
-		} catch (EntityNotFoundException e) {
-			statistics_find = new Entity(k_find);
-			statistics_find.setProperty("counter", 0);
-		}
-		
-		try {
-			statistics_remove = datastore.get(k_remove);
-		} catch (EntityNotFoundException e) {
-			statistics_remove = new Entity(k_remove);
-			statistics_remove.setProperty("counter", 0);
-		}		
+		if (ops.equals("remove")) {
+			k_remove = KeyFactory.createKey("stats_op", "remove");
+			try {
+				statistics_remove = datastore.get(k_remove);
+			} catch (EntityNotFoundException e) {
+				statistics_remove = new Entity(k_remove);
+				statistics_remove.setProperty("counter", 0);
+				datastore.put(statistics_remove);					
+			}		
+	    }
 
 	}	
 	
@@ -141,45 +159,73 @@ public class Pa3CloudStore extends HttpServlet {
         DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();
         Entity  s =  null;
         Entity  counter;
+        Key k = null;
         int nextCount = 0;
-        /* One key for operation */
-      	/* That key contains entities that contains counter */
-		
+        /* One key for each operation */
+      
+        
+		initStatistics(operation);
+		/* Each statistics is stored as an entity with the running index as primary key */
         if (operation.equals("insert")) {
-        	nextCount = (Integer) statistics_insert.getProperty("counter");
+        	nextCount = Integer.valueOf(String.valueOf(statistics_insert.getProperty("counter")));
         	nextCount++;
        		statistics_insert.setProperty("counter", nextCount);
+	      	k = new KeyFactory.Builder("stats_op", "insert")
+	      				.addChild("stats_index_insert", nextCount)
+	      				.getKey();
+			datastore.put(statistics_insert);	      	
         } else if (operation.equals("find")){
-        	nextCount = (Integer) statistics_find.getProperty("counter");
+        	nextCount = Integer.valueOf(String.valueOf(statistics_find.getProperty("counter")));
         	nextCount++;
        		statistics_find.setProperty("counter", nextCount);
-        } else if (operation.equals("remove")){
-        	nextCount = (Integer) statistics_remove.getProperty("counter");
+	      	k = new KeyFactory.Builder("stats_op", "find")
+				.addChild("stats_index_find", nextCount)
+				.getKey();
+			datastore.put(statistics_find);	      	
+		} else if (operation.equals("remove")){
+        	nextCount = Integer.valueOf(String.valueOf(statistics_remove.getProperty("counter")));
         	nextCount++;
        		statistics_remove.setProperty("counter", nextCount);
+	      	k = new KeyFactory.Builder("stats_op", "remove")
+				.addChild("stats_index_remove", nextCount)
+				.getKey();
+			datastore.put(statistics_remove);	      	
         }
-
-      	Key k = new KeyFactory.Builder("stats_op", operation)
-			.addChild("stats_index", nextCount)
-			.getKey();
-   		s = new Entity(k);
-   		s.setProperty("stats_index", nextCount);
-   		s.setProperty("startTime", System.currentTimeMillis());
-        s.setProperty("filename", filename);
+        
+        if (null != k) {
+	   		s = new Entity(k);
+			/* Properties stored for statistics (before executing operation)*/	   		
+	   		s.setProperty("stats_index", nextCount);
+	   		s.setProperty("startTime", System.currentTimeMillis());
+	        s.setProperty("filename", filename);
+	        if (memCacheEnable == true) {
+	        	s.setProperty("operation", operation + " with memache");
+	        } else {
+	        	s.setProperty("operation", operation);
+	        }
+        }
    		return s;
 	}
 	
 	public void statisticsEnd(Entity s, int datasize) {
+		/* Properties stored for statistics (after executing operation)*/	   		
+        DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();
 		s.setProperty("endTime", System.currentTimeMillis());
 		s.setProperty("filesize", datasize);
-		return;
+      	datastore.put(s);
+      	return;
     }
 	
 	public void outputHeader(User user,
 			HttpServletRequest req,
 			HttpServletResponse resp) 
 	        		 throws ServletException, IOException {
+		
+		/* Common Header  */
    	    String login_user;
+   	    /* Following block enables looging in through automation script
+   	     * without user authentication.
+   	     */
 		if (user == null)
    	    {
    	    	login_user = "harsha.matadhikari";
@@ -209,6 +255,8 @@ public class Pa3CloudStore extends HttpServlet {
 			HttpServletRequest req,
 	         HttpServletResponse resp) 
 	        		 throws ServletException, IOException {
+		/* Common Footer  */		
+		
         resp.getWriter().println("</div>");
    	    resp.getWriter().println("<div id=\"nav\">");
         resp.getWriter().println("<a href=\"/pa3_cloud.jsp\">Go Back</a>.</p>");
@@ -220,7 +268,12 @@ public class Pa3CloudStore extends HttpServlet {
             HttpServletResponse resp)
           		  throws IOException,
                     ServletException         {
+		/* In this function we dump the statistics */	   		
+		
    	    String login_user;
+   	    /* Following block enables looging in through automation script
+   	     * without user authentication.
+   	     */
 		if (user == null)
    	    {
    	    	login_user = "harsha.matadhikari";
@@ -232,16 +285,49 @@ public class Pa3CloudStore extends HttpServlet {
         DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();
         
         /* Insert */
-       	Key k = new KeyFactory.Builder("stats_op", "insert").getKey();  	    
-  	    Query q = new Query("stats_index", k);
+  	    Query q = new Query("stats_index_insert", k_insert);
    	    PreparedQuery pq = datastore.prepare(q); 
-   	    outputHeader(user, req,resp);
-        resp.getWriter().println("<i> Statistics for Insert </i><br><br>");  
+   	    outputHeader(user, req,resp); /* Header (User name and Sign Out)*/
+        resp.getWriter().println("<br><br><i> Statistics for Insert </i><br>");  
         
         resp.getWriter().println("<table border=1><tr>" +
         		"<td>Index</td>" +
         		"<td>Filename</td>" +
         		"<td>Filesize</td>" +
+        		"<td>Operation</td>" +
+        		"<td>StartTime (ms)</td>" +
+        		"<td>EndTime (ms) </td>" +
+        		"<td>TotalTime (ms) </td>" +
+        		"</tr> ");
+        
+   	    for (Entity result : pq.asIterable()) {
+   	    	Long endTime, startTime, totalTime;
+   	    	endTime = (Long.valueOf(String.valueOf(result.getProperty("endTime")))); 
+   	    	startTime = (Long.valueOf(String.valueOf(result.getProperty("startTime"))));
+   	    	
+    	    resp.getWriter().println("<tr>" +
+    	    				    "<td>" + result.getProperty("stats_index") + 
+    							"</td><td>" + result.getProperty("filename") + "</td>" + 
+    							"</td><td>" + result.getProperty("filesize") + "</td>" + 
+    							"</td><td>" + result.getProperty("operation") + "</td>" + 
+    							"</td><td>" + result.getProperty("startTime") + "</td>" + 
+    							"</td><td>" + result.getProperty("endTime") + "</td>" +
+    							"</td><td>" + (endTime - startTime) + "</td>" +
+    	    					"</tr>");
+   	    }
+	    resp.getWriter().println("</table>");
+
+	    
+       /* Find */
+  	    q = new Query("stats_index_find", k_find);
+   	    pq = datastore.prepare(q); 
+        resp.getWriter().println("<br><br><i> Statistics for Find </i><br>");  
+        
+        resp.getWriter().println("<table border=1><tr>" +
+        		"<td>Index</td>" +
+        		"<td>Filename</td>" +
+        		"<td>Filesize</td>" +
+        		"<td>Operation</td>" +	        		
         		"<td>StartTime</td>" +
         		"<td>EndTime</td>" +
         		"<td>TotalTime</td>" +
@@ -249,29 +335,68 @@ public class Pa3CloudStore extends HttpServlet {
         
    	    for (Entity result : pq.asIterable()) {
    	    	
-   	    	long totalTime;
-   	    	totalTime = ((Integer)result.getProperty("endTime") - 
-   	    			(Integer)result.getProperty("startTime"));
+   	    	Long endTime, startTime, totalTime;
+   	    	endTime = (Long.valueOf(String.valueOf(result.getProperty("endTime")))); 
+   	    	startTime = (Long.valueOf(String.valueOf(result.getProperty("startTime"))));
    	    	
     	    resp.getWriter().println("<tr>" +
     	    				    "<td>" + result.getProperty("stats_index") + 
     							"</td><td>" + result.getProperty("filename") + "</td>" + 
     							"</td><td>" + result.getProperty("filesize") + "</td>" + 
+    							"</td><td>" + result.getProperty("operation") + "</td>" + 	    							
     							"</td><td>" + result.getProperty("startTime") + "</td>" + 
     							"</td><td>" + result.getProperty("endTime") + "</td>" +
-    							"</td><td>" + totalTime + "</td>" +
+    							"</td><td>" + (endTime - startTime) + "</td>" +
     	    					"</tr>");
    	    }
 	    resp.getWriter().println("</table>");
-	    outputFooter(user,req, resp);
+		    
+       /* Remove */
+  	    q = new Query("stats_index_remove", k_remove);
+   	    pq = datastore.prepare(q); 
+        resp.getWriter().println("<br><br><i> Statistics for Remove </i><br>");  
+        
+        resp.getWriter().println("<table border=1><tr>" +
+        		"<td>Index</td>" +
+        		"<td>Filename</td>" +
+        		"<td>Filesize</td>" +
+        		"<td>Operation</td>" +		        		
+        		"<td>StartTime</td>" +
+        		"<td>EndTime</td>" +
+        		"<td>TotalTime</td>" +
+        		"</tr> ");
+        
+   	    for (Entity result : pq.asIterable()) {
+   	    	
+   	    	Long endTime, startTime, totalTime;
+   	    	endTime = (Long.valueOf(String.valueOf(result.getProperty("endTime")))); 
+   	    	startTime = (Long.valueOf(String.valueOf(result.getProperty("startTime"))));
+   	    	
+    	    resp.getWriter().println("<tr>" +
+    	    				    "<td>" + result.getProperty("stats_index") + 
+    							"</td><td>" + result.getProperty("filename") + "</td>" + 
+    							"</td><td>" + result.getProperty("filesize") + "</td>" + 
+    							"</td><td>" + result.getProperty("operation") + "</td>" + 		    							
+    							"</td><td>" + result.getProperty("startTime") + "</td>" + 
+    							"</td><td>" + result.getProperty("endTime") + "</td>" +
+    							"</td><td>" + (endTime - startTime) + "</td>" +
+    	    					"</tr>");
+   	    }
+	    resp.getWriter().println("</table>");		    
+		    
+	    outputFooter(user,req, resp);/* Footer; Navigational Links */	    
 	}
 	
-	public void performListing(User user,
+	public void performClearStatistics(User user,
             HttpServletRequest req, 
             HttpServletResponse resp)
           		  throws IOException,
                     ServletException         {
    	    String login_user;
+   	    /* Following block enables looging in through automation script
+   	     * without user authentication.
+   	     */
+   	    
 		if (user == null)
    	    {
    	    	login_user = "harsha.matadhikari";
@@ -281,10 +406,167 @@ public class Pa3CloudStore extends HttpServlet {
    	    	login_user = user.getNickname();   	    	
    	    }			
         DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();
+   	    outputHeader(user, req,resp);  /* Header (User name and Sign Out)*/      
+        /* Insert */
+        resp.getWriter().println("<i> Deleting Statistics for Insert </i><br><br>");          
+  	    Query q = new Query("stats_index_insert", k_insert);
+   	    PreparedQuery pq = datastore.prepare(q); 
+        
+   	    for (Entity result : pq.asIterable()) {
+   	    	
+   	    	datastore.delete(result.getKey());
+   	    }
+		initStatistics("insert");
+   		statistics_insert.setProperty("counter", 0);
+   		datastore.put(statistics_insert);
+	    
+       /* Find */
+  	    q = new Query("stats_index_find", k_find);
+   	    pq = datastore.prepare(q); 
+        resp.getWriter().println("<i> Deleting Statistics for Find </i><br><br>");  
+        
+   	    for (Entity result : pq.asIterable()) {
+   	    	
+   	    	datastore.delete(result.getKey());
+   	    	
+   	    }
+		initStatistics("find");
+   		statistics_find.setProperty("counter", 0);
+   		datastore.put(statistics_find);
+		    
+       /* Remove */
+  	    q = new Query("stats_index_remove", k_remove);
+   	    pq = datastore.prepare(q); 
+        resp.getWriter().println("<i> Deleting Statistics for Remove </i><br><br>");  
+        
+   	    for (Entity result : pq.asIterable()) {
+   	    	
+   	    	datastore.delete(result.getKey());
+
+   	    }
+		initStatistics("remove");
+   		statistics_remove.setProperty("counter", 0);
+   		datastore.put(statistics_remove);
+   		
+	    outputFooter(user,req, resp);/* Footer; Navigational Links */	    
+	}
+	
+	public void initMemCacheEnable(User user)
+          		  throws IOException,
+                    ServletException         {
+		
+   	    String login_user;
+   	    
+   	    /* Following block enables looging in through automation script
+   	     * without user authentication.
+   	     */
+		if (user == null)
+   	    {
+   	    	login_user = "harsha.matadhikari";
+   	    }
+   	    else
+   	    {
+   	    	login_user = user.getNickname();   	    	
+   	    }			
+        DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();
+       	Key k3 = new KeyFactory.Builder("user", login_user)
+       						.addChild("memcache", 1)
+       						.getKey();  	    
+       	Entity  m;
+        
+       	try {
+         	  m = datastore.get(k3);
+        } catch (EntityNotFoundException ex) {
+     		  m = new Entity(k3);
+     		  /* By default set the value of memcachenable to true */
+        	  m.setProperty("memcache_enable", "true");
+        	  datastore.put(m);
+        }
+   	    
+       	String menable = (String) m.getProperty("memcache_enable");
+       	
+       	if (menable.equals("true")) {
+       		memCacheEnable = true;
+       	} else if (menable.equals("false")) {
+       		memCacheEnable = false;
+       	}
+
+	}	
+	
+	public void performMemCacheToggle(User user,
+            HttpServletRequest req, 
+            HttpServletResponse resp)
+          		  throws IOException,
+                    ServletException         {
+   	    String login_user;
+   	    /* Following block enables looging in through automation script
+   	     * without user authentication.
+   	     */   	    
+		if (user == null)
+   	    {
+   	    	login_user = "harsha.matadhikari";
+   	    }
+   	    else
+   	    {
+   	    	login_user = user.getNickname();   	    	
+   	    }			
+        DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();
+       	Key k3 = new KeyFactory.Builder("user", login_user)
+			.addChild("memcache", 1)
+			.getKey();  	    
+   	    outputHeader(user, req,resp); /* Header (User name and Sign Out)*/
+   	   
+       	Entity  m;
+        
+       	try {
+         	  m = datastore.get(k3);
+        } catch (EntityNotFoundException ex) {
+     		  m = new Entity(k3);
+        }
+   	    
+       	/* Set the value as per the user request. Passed through
+       	 * the form field memcache-enable
+       	 */
+       	String menable = req.getParameter("memcache-enable");
+       	
+       	if (menable.equals("Enable")) {
+       		memCacheEnable = true;
+       		m.setProperty("memcache_enable", "true");
+            resp.getWriter().println("<i> Updated Memcache to true</i><br><br>");
+       	} else if (menable.equals("Disable")) {
+       		memCacheEnable = false;
+       		m.setProperty("memcache_enable", "false");
+            resp.getWriter().println("<i> Updated Memcache to false</i><br><br>");
+       	}
+  	    datastore.put(m);       	
+	    outputFooter(user,req, resp);/* Footer; Navigational Links */
+	}	
+	
+	public void performListing(User user,
+            HttpServletRequest req, 
+            HttpServletResponse resp)
+          		  throws IOException,
+                    ServletException         {
+   	    String login_user;
+   	    /* Following block enables looging in through automation script
+   	     * without user authentication.
+   	     */    	    
+		if (user == null)
+   	    {
+   	    	login_user = "harsha.matadhikari";
+   	    }
+   	    else
+   	    {
+   	    	login_user = user.getNickname();   	    	
+   	    }
+		/* We do the listing using the fileinfo table that we have 
+		 * stored in datastore. FIles are stored however in cloudstore
+		 */
+        DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();
        	Key k3 = new KeyFactory.Builder("user", login_user).getKey();  	    
   	    Query q = new Query("fileinfo", k3);
    	    PreparedQuery pq = datastore.prepare(q); 
-   	    outputHeader(user, req,resp);
+   	    outputHeader(user, req,resp); /* Header (User name and Sign Out)*/
         resp.getWriter().println("<i> So you want see the listing of your files "
 						 + " ! Right? Here we go ... </i><br><br>");  
         
@@ -294,16 +576,17 @@ public class Pa3CloudStore extends HttpServlet {
    	    	String filesize = String.valueOf(
    	    	result.getProperty("file-contentlen"));
    	    	String filestore = (String) result.getProperty("file-store");
-   	    	
-    	    resp.getWriter().println("<tr><td>" + filename +
+   	    	if (filestore.equals("CloudStore")) {
+   	    		resp.getWriter().println("<tr><td>" + filename +
     							"</td><td>" + filesize + "</td>" + 
     							"</td><td>" + filestore + "</td>" + 
     	    					"</tr>");
+   	    	}
    	    }
 	    resp.getWriter().println("</table>");
-	    outputFooter(user,req, resp);
+	    outputFooter(user,req, resp);/* Footer; Navigational Links */
 	}
-
+	
 	public void performFind(User user,
             HttpServletRequest req, 
             HttpServletResponse resp)
@@ -315,6 +598,7 @@ public class Pa3CloudStore extends HttpServlet {
         String buffer;		
   	    String filename=req.getParameter("file_name");
    	    String login_user;
+   	    String filesize = "0";
 		if (user == null)
    	    {
    	    	login_user = "harsha.matadhikari";
@@ -326,8 +610,15 @@ public class Pa3CloudStore extends HttpServlet {
 		Entity stats = statisticsStart("find", filename);
   	    // Check memCache first 
   	    Entity memEnt = (Entity) syncCache.get(filename);
+  	    
   	    if(memEnt == null || memCacheEnable == false) { 
-		
+		/* Memcache is false;
+		 * We have to retrieve from cloud */
+		/* Using the datastore fileinfo check where is this
+		 * file stored. We can download a file only from cloud store
+		 * in this function.
+		 * This complexity is beause we support DataStore also  and 
+		 * have the same fileinfo table */
         DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();
        	Key k2 = new KeyFactory.Builder("user", login_user)
 		   .addChild("fileinfo", filename)
@@ -344,15 +635,14 @@ public class Pa3CloudStore extends HttpServlet {
    	    		/* Datastore retieval */
    	    	} else if (filestore.equals("CloudStore")) {
    	    		/* Cloudstore retieval */
-   	   	    	String filesize = String.valueOf(
+   	    		/* We found the file lets download */
+   	   	    	filesize = String.valueOf(
    	   	   	    	result.getProperty("file-contentlen"));   	    		
    	            FileService fileService = FileServiceFactory.getFileService();   	    		
    	    		String cloud_filename = "/gs/" + BUCKETNAME + "/" + filename;
                 AppEngineFile readableFile = new AppEngineFile(cloud_filename);
                 FileReadChannel readChannel =
                     fileService.openReadChannel(readableFile, false);
-                // Again, different standard Java ways of reading from the channel.
-                
    		   	    String mimeType = "application/octet-stream";
    	        	resp.setContentType(mimeType);
    	            resp.setContentLength((int) Integer.valueOf(filesize));
@@ -370,8 +660,16 @@ public class Pa3CloudStore extends HttpServlet {
                 	// This file should have been in memCache
                 	storeInMemCache = true ;
                 }
+                
+                /* We read line by line 
+                 * Also we add CR-LF which gets removed.
+                 * This is not a good approach. Should read some bytes till 
+                 * end of file. But that immplementation had some issues. 
+                 * Temprararily we have this slow + hacked implentation 
+                 * which we should relook later. A TODO.
+                 */
                 while ((str = reader.readLine()) != null) {
-                	str += "\n\r";
+                	str += "\r\n";
                 	if (storeInMemCache == true ) {
                 		memStr = memStr + str ;	
                 	}
@@ -384,6 +682,7 @@ public class Pa3CloudStore extends HttpServlet {
                    	d.setProperty("file-contentlen", Integer.valueOf(filesize ));
                    	d.setProperty("file-name", filename);
                    	d.setProperty("file-path", filename);
+                   	
                    	d.setProperty("file-store", "CloudStore");
                    	d.setProperty("content", blob);
                 	syncCache.put(filename, d);
@@ -398,11 +697,12 @@ public class Pa3CloudStore extends HttpServlet {
   	    	 String str;
   	    	 Blob blob;
   	    	 int content_len ;
-  	    	found  = 1 ; 
-  	    	blob  = (Blob) memEnt.getProperty("content");
-  	    	byte[] buffer2 = blob.getBytes();
-  	    	content_len = (Integer) memEnt.getProperty("file-contentlen");
-  	    	
+  	    	 found  = 1 ; 
+  	    	 blob  = (Blob) memEnt.getProperty("content");
+  	    	 byte[] buffer2 = blob.getBytes();
+  	    	 content_len = (Integer) memEnt.getProperty("file-contentlen");
+  	    	 filesize = String.valueOf(content_len);
+  	    	 
   	    	String mimeType = "application/octet-stream";
 	        	resp.setContentType(mimeType);
 	            resp.setContentLength(buffer2.length );
@@ -426,8 +726,10 @@ public class Pa3CloudStore extends HttpServlet {
     	    resp.getWriter().println("<p>Filename = " + filename +
 					                              " Not Found ...</p>");
     	    outputFooter(user,req, resp);     	    
-   	    }	
-		statisticsEnd(stats, complete_len);
+   	    }
+   	    /* Update the size of download and time taken in statistics */
+   	    int intFileSize = Integer.valueOf(filesize);
+		statisticsEnd(stats, intFileSize);
     
 	}
 	
@@ -496,7 +798,7 @@ public class Pa3CloudStore extends HttpServlet {
    	    {
    	    	login_user = user.getNickname();   	    	
    	    }			
-
+		
 		String filename=req.getParameter("file_name");	
 		
 		Entity stats = statisticsStart("remove", filename);		
@@ -580,10 +882,16 @@ public class Pa3CloudStore extends HttpServlet {
         resp.getWriter().println("<i> is form field = " + item.isFormField() + "</i><br>");  
         resp.getWriter().println("<i> filename = " + item.getName() + "</i><br>");
         resp.getWriter().println("<i> content-length = " + req.getContentLength() + "</i><br>");
-        if(syncCache.get(item.getName()) == null ) {
-        	resp.getWriter().println("<i> Memcache : Not found here </i><br>");
-        }else { 
-        	resp.getWriter().println("<i> Memcache : File already added </i><br>");
+        if (memCacheEnable == true)
+        {
+        	resp.getWriter().println("<i> Memcache : Enabled </i><br>");        	
+	        if(syncCache.get(item.getName()) == null ) {
+	        	resp.getWriter().println("<i> Memcache : " + item.getName() + " Not found in memcache </i><br>");
+	        }else { 
+	        	resp.getWriter().println("<i> Memcache : " + item.getName() + " Found in memcache </i><br>");
+	        }
+        } else {
+        	resp.getWriter().println("<i> Memcache : Disabled </i><br>");        	
         }
         resp.getWriter().println("<i> Should invoke  storeInCloudStore </i><br>");
 	
@@ -602,7 +910,9 @@ public class Pa3CloudStore extends HttpServlet {
         byte[] buffer = new byte[1024*924];
         int complete_len = 0;
         
-		Entity stats = statisticsStart("insert", item.getFieldName());        
+		Entity stats = statisticsStart("insert", item.getName());  
+		
+		
         DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();
        	Key k3 = new KeyFactory.Builder("user", userName).addChild("fileinfo", item.getName()).getKey();
        	Entity  d;
@@ -629,9 +939,9 @@ public class Pa3CloudStore extends HttpServlet {
                 fileService.createNewGSFile(optionsBuilder.build());
       	int content_len = req.getContentLength() ;  
         boolean storeInMemCache = false ;
-	if((content_len < 1000*1000) && memCacheEnable == true) {
+        if((content_len < 1000*1000) && memCacheEnable == true) {
             storeInMemCache = true ;
-	}
+        }
      
        	boolean lock = false;
 
@@ -640,21 +950,23 @@ public class Pa3CloudStore extends HttpServlet {
 
         PrintWriter out = new PrintWriter(Channels.newWriter(writeChannel, "UTF8"));
         
-
+        int fileSize = 0;
         
         while ((len = stream.read(buffer, complete_len, (buffer.length-complete_len))) != -1) {
        	    complete_len += len;
         	resp.getWriter().println("<br><i>File Chunk " + chunk_count +
-        			" with lenth " + len + " complete_len = " + complete_len +
+        			" with length " + len + " complete_len = " + complete_len +
         				"buffer.length = " + buffer.length + "</i><br>" );
         	chunk_count++;
            	if (complete_len == buffer.length) {
+           		String str = new String(buffer, 0, complete_len);
             	resp.getWriter().println("<br><i>Writing into cloud " 
             				+ " complete_len = " + complete_len +
             				"buffer.length = " + buffer.length + "</i><br>" );
 
-           		out.println(buffer.toString());
-           		complete_len = 0;
+           		out.println(str);
+           		fileSize += complete_len;
+           		complete_len = 0;           		
            	}        	
         }
 
@@ -664,12 +976,13 @@ public class Pa3CloudStore extends HttpServlet {
     				+ " complete_len = " + complete_len +
     				"buffer.length = " + buffer.length + "</i><br>" );
        		out.println(str);
+       		fileSize += complete_len;
        	}
         out.close();
 
         String path = writableFile.getFullPath();
         
-       	d.setProperty("file-contentlen", complete_len);
+       	d.setProperty("file-contentlen", fileSize);
        	d.setProperty("file-name", item.getName());
        	d.setProperty("file-path", new Blob(path.getBytes()));
        	d.setProperty("file-store", "CloudStore");       	
@@ -679,7 +992,7 @@ public class Pa3CloudStore extends HttpServlet {
             Entity mEnt = new Entity(item.getName());
             Blob blob = new Blob(buffer);
                         
-            mEnt.setProperty("file-contentlen", complete_len);
+            mEnt.setProperty("file-contentlen", fileSize);
             mEnt.setProperty("file-name", item.getName());
             mEnt.setProperty("file-path", item.getName());
             mEnt.setProperty("file-store", "CloudStore");
@@ -692,10 +1005,11 @@ public class Pa3CloudStore extends HttpServlet {
         writeChannel =
                 fileService.openWriteChannel(writableFile, lock);
        	writeChannel.closeFinally();
-		statisticsEnd(stats, complete_len);       	
-        resp.getWriter().println("<br><i>File " +  item.getName() + " Added. Length =" + complete_len + "</i><br>" );
+
+       	
+		statisticsEnd(stats, fileSize);       	
+        resp.getWriter().println("<br><i>File " +  item.getName() + " Added. Length =" + fileSize + "</i><br>" );
         
 	}
 	
 }
-
