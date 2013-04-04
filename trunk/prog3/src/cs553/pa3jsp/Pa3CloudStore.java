@@ -41,7 +41,12 @@ import com.google.appengine.api.memcache.MemcacheService;
 import com.google.appengine.api.memcache.MemcacheServiceFactory;
 
 import java.io.PrintWriter;
+import java.nio.ByteBuffer;
+import java.nio.channels.AsynchronousCloseException;
 import java.nio.channels.Channels;
+import java.nio.channels.ClosedByInterruptException;
+import java.nio.channels.ClosedChannelException;
+import java.nio.channels.NonReadableChannelException;
 
 @SuppressWarnings("serial")
 public class Pa3CloudStore extends HttpServlet {
@@ -594,11 +599,16 @@ public class Pa3CloudStore extends HttpServlet {
                     ServletException         {
 		int found = 0;
         int len;
-        int complete_len = 0;        
+        int complete_len = 0;
+        char[] cbuf = new char[1024*924*10];
+        byte[] bbuf = new byte[1024*1024];
         String buffer;		
   	    String filename=req.getParameter("file_name");
    	    String login_user;
    	    String filesize = "0";
+   	    int bRed;
+   	    int maxBufLen = 1024 * 924 * 10;
+   	      	     
 		if (user == null)
    	    {
    	    	login_user = "harsha.matadhikari";
@@ -606,11 +616,12 @@ public class Pa3CloudStore extends HttpServlet {
    	    else
    	    {
    	    	login_user = user.getNickname();   	    	
-   	    }			
+   	    }
+		//OK
 		Entity stats = statisticsStart("find", filename);
   	    // Check memCache first 
   	    Entity memEnt = (Entity) syncCache.get(filename);
-  	    
+         
   	    if(memEnt == null || memCacheEnable == false) { 
 		/* Memcache is false;
 		 * We have to retrieve from cloud */
@@ -650,9 +661,10 @@ public class Pa3CloudStore extends HttpServlet {
    	            String headerValue = String.format("attachment; filename=\"%s\"", filename);
    	            resp.setHeader(headerKey, headerValue);   	        	
    	            OutputStream outStream = resp.getOutputStream();
-
+   	            // Not Ok
                 BufferedReader reader =
                         new BufferedReader(Channels.newReader(readChannel, "UTF8"));
+                
                 String str;
                 String memStr = ""; 
                 boolean storeInMemCache = false ;
@@ -668,6 +680,7 @@ public class Pa3CloudStore extends HttpServlet {
                  * Temprararily we have this slow + hacked implentation 
                  * which we should relook later. A TODO.
                  */
+                /*
                 while ((str = reader.readLine()) != null) {
                 	str += "\r\n";
                 	if (storeInMemCache == true ) {
@@ -675,7 +688,88 @@ public class Pa3CloudStore extends HttpServlet {
                 	}
                		outStream.write(str.getBytes(), 0, str.length());
                		complete_len += str.length();
-                }        	
+                } 
+             
+                */
+                int val ;
+                ByteBuffer dst ; //= java.nio.ByteBuffer.allocateDirect(1024*500);
+                val =0 ;
+                //= new ByteBuffer();
+                try { 
+                	int lidx;
+                	dst  = java.nio.ByteBuffer.allocateDirect(1024*1024*10);
+                while((val = readChannel.read(dst) ) > 0 ) { 
+                	//outStream.write(dst.array(),0,val); //array not supported
+                	for(lidx = 0 ; lidx < val ;lidx++) {
+                		bbuf[lidx] = dst.get(); 
+                	}
+                	outStream.write(bbuf,0,val);
+                	//System.out.println("Reading " + val);
+                	//Integer tj = new Integer(val);
+                	//str = " mangesh " + tj.toString() ;
+                	//outStream.write(str.getBytes(),0,str.length());
+                	
+                	if (storeInMemCache == true ) {
+                		memStr = memStr + new String(dst.array()) ;
+                	}
+                	dst.clear();
+                }
+                } catch (ClosedChannelException e) {
+                		throw new ServletException("Close Channel: " + e.getMessage());
+                
+                } catch (NonReadableChannelException e ) {
+                	throw new ServletException("Non Readable: " + e.getMessage());
+             
+                } catch (IOException e ) {
+                	throw new ServletException("IO Exp: " + e.getMessage());
+                }
+                
+                /*} catch (AsynchronousCloseException e){
+            	throw new ServletException("AsyncClose: " + e.getMessage());
+            
+            }catch (ClosedByInterruptException e) { 
+            	throw new ServletException("Interrupt: " + e.getMessage());
+            */
+             
+                /*
+                Integer tj = new Integer(val);
+            	str = " mangesh Last" + tj.toString() ;
+            	outStream.write(str.getBytes(),0,str.length());
+                */
+                /*
+                int fidx = 0 ;
+                while((bRed=reader.read(cbuf,fidx,maxBufLen - fidx)) != -1 ){
+                	fidx += bRed;
+                	
+                	Integer tj = new Integer(val);
+                	//str = "mangesh " + tj.toString() ;
+                	//str = "Mangesh v" + tj.toString() ;
+                	if(fidx == maxBufLen){
+                		str = new String(cbuf);
+                		if (storeInMemCache == true ) {
+                    		memStr = memStr + str ;
+                    	}
+                		
+                		//outStream.write(str.getBytes(),0,str.length());
+                		outStream.write(str.getBytes(),0,fidx);
+                		fidx = 0 ; 
+                	}
+                	complete_len += bRed;
+                }
+                
+                if(fidx != 0 ) {
+                	// There is something left out finish writing it
+                	str = new String(cbuf);
+                	//Integer tj = new Integer(val);
+            		//str = "Mangesh_last val" + tj.toString() ;
+            		if (storeInMemCache == true ) {
+                		memStr = memStr + str ;
+                	}
+            		//outStream.write(str.getBytes(),0,str.length());
+            		outStream.write(str.getBytes(),0,fidx);
+            		fidx = 0 ;
+                }
+                */
                 if (storeInMemCache == true ) {
                 	Entity d = new Entity(filename);
                 	Blob blob = new  Blob(memStr.getBytes());
@@ -950,21 +1044,23 @@ public class Pa3CloudStore extends HttpServlet {
 
         PrintWriter out = new PrintWriter(Channels.newWriter(writeChannel, "UTF8"));
         
-
+        int fileSize = 0;
         
         while ((len = stream.read(buffer, complete_len, (buffer.length-complete_len))) != -1) {
        	    complete_len += len;
         	resp.getWriter().println("<br><i>File Chunk " + chunk_count +
-        			" with lenth " + len + " complete_len = " + complete_len +
+        			" with length " + len + " complete_len = " + complete_len +
         				"buffer.length = " + buffer.length + "</i><br>" );
         	chunk_count++;
            	if (complete_len == buffer.length) {
+           		String str = new String(buffer, 0, complete_len);
             	resp.getWriter().println("<br><i>Writing into cloud " 
             				+ " complete_len = " + complete_len +
             				"buffer.length = " + buffer.length + "</i><br>" );
 
-           		out.println(buffer.toString());
-           		complete_len = 0;
+           		out.print(str);
+           		fileSize += complete_len;
+           		complete_len = 0;           		
            	}        	
         }
 
@@ -973,13 +1069,14 @@ public class Pa3CloudStore extends HttpServlet {
         	resp.getWriter().println("<br><i>Writing into cloud " 
     				+ " complete_len = " + complete_len +
     				"buffer.length = " + buffer.length + "</i><br>" );
-       		out.println(str);
+       		out.print(str);
+       		fileSize += complete_len;
        	}
         out.close();
 
         String path = writableFile.getFullPath();
         
-       	d.setProperty("file-contentlen", complete_len);
+       	d.setProperty("file-contentlen", fileSize);
        	d.setProperty("file-name", item.getName());
        	d.setProperty("file-path", new Blob(path.getBytes()));
        	d.setProperty("file-store", "CloudStore");       	
@@ -989,7 +1086,7 @@ public class Pa3CloudStore extends HttpServlet {
             Entity mEnt = new Entity(item.getName());
             Blob blob = new Blob(buffer);
                         
-            mEnt.setProperty("file-contentlen", complete_len);
+            mEnt.setProperty("file-contentlen", fileSize);
             mEnt.setProperty("file-name", item.getName());
             mEnt.setProperty("file-path", item.getName());
             mEnt.setProperty("file-store", "CloudStore");
@@ -1004,8 +1101,8 @@ public class Pa3CloudStore extends HttpServlet {
        	writeChannel.closeFinally();
 
        	
-		statisticsEnd(stats, complete_len);       	
-        resp.getWriter().println("<br><i>File " +  item.getName() + " Added. Length =" + complete_len + "</i><br>" );
+		statisticsEnd(stats, fileSize);       	
+        resp.getWriter().println("<br><i>File " +  item.getName() + " Added. Length =" + fileSize + "</i><br>" );
         
 	}
 	
