@@ -19,7 +19,7 @@ public class schedWorker {
 	
 	   public static  void bindDatagramSocket() {
 		   try {
-			   cInfo.serverSocket = new DatagramSocket(9877);
+			   cInfo.serverSocket = new DatagramSocket(9876);
 		   } catch (Exception error) {
 				  System.err.println("Error in socket communication " + error.getMessage());
 		   }
