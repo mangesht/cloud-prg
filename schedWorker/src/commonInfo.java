@@ -2,6 +2,8 @@ import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.util.concurrent.BlockingQueue;
 
+import com.amazonaws.services.sqs.AmazonSQS;
+
 
 public class commonInfo {
 	public BlockingQueue <String> taskQ;
@@ -12,7 +14,8 @@ public class commonInfo {
 	public boolean remoteWorker;
 	public int localWorkers; 
 	public DatagramSocket serverSocket; 
-	
+	public AmazonSQS sqs ;
+	public String taskQueueUrl  ; 
 	commonInfo () {
 		remoteWorker = false;
 		localWorkers = 1;
