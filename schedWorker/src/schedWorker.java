@@ -2,6 +2,8 @@
 import java.net.*;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
+import com.amazonaws.auth.ClasspathPropertiesFileCredentialsProvider;
+import com.amazonaws.services.sqs.AmazonSQSClient;
 
 public class schedWorker {
 
@@ -18,7 +20,13 @@ public class schedWorker {
 								 "-l <num_localworkers>" +
 								 " [-r] ");
 	}
-	
+
+	   public void SQSInit(){
+		   
+		   cInfo.sqs = new AmazonSQSClient(new ClasspathPropertiesFileCredentialsProvider());
+		   cInfo.taskQueueUrl  = "https://sqs.us-east-1.amazonaws.com/571769354000/schedToWorker";
+	   }
+
     public static  void bindDatagramSocket() {
 	   try {
 		   cInfo.serverSocket = new DatagramSocket(cInfo.serverPort);

@@ -1,5 +1,8 @@
 import java.net.*;
 
+import com.amazonaws.AmazonClientException;
+import com.amazonaws.services.sqs.model.SendMessageRequest;
+
 public class taskReceiver extends Thread {
 	public commonInfo cInfo; 
 	   
@@ -8,7 +11,18 @@ public class taskReceiver extends Thread {
    static DatagramPacket receivePacket;
    static DatagramPacket sendPacket;
    	
-   
+	  
+	 public void remoteSend(String message) {
+	   try { 
+		   cInfo.sqs.sendMessage(new SendMessageRequest(cInfo.taskQueueUrl, message));
+	   } catch (AmazonClientException ace) {
+        System.out.println("Caught an AmazonClientException, which means the client encountered " +
+                "a serious internal problem while trying to communicate with SQS, such as not " +
+                "being able to access the network.");
+        System.out.println("Error Message: " + ace.getMessage());
+    }
+
+	   }
    public void receiveRequestXML() {
 		  byte[] receiveData = new byte[1024];
 		  try {
