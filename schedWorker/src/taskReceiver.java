@@ -16,12 +16,16 @@ public class taskReceiver extends Thread {
 				  receivePacket = new DatagramPacket(receiveData, receiveData.length);
 				  cInfo.serverSocket.receive(receivePacket);
 				  taskRequestXML = new String( receivePacket.getData());
-			//	taskRequestXML = "<request><task><taskid>" +"1" + "</taskid><taskstr>sleep "+ "1000" +" </taskstr></task></request>";
-				   
+				  cInfo.IPAddress = receivePacket.getAddress();
+				  cInfo.port = receivePacket.getPort();
+				  taskRequestXML = taskRequestXML.trim();
+				  //	taskRequestXML = "<request><task><taskid>" +"1" + "</taskid><taskstr>sleep "+ "1000" +" </taskstr></task></request>";
+				  System.out.println("RECEIVED: Length "+ taskRequestXML.length() + taskRequestXML); 
 				  cInfo.taskQ.put(taskRequestXML);
-			      System.out.println("RECEIVED: " + taskRequestXML);
+			      
 			  } catch (Exception error) {
 				  System.err.println("Task Receiver : Error in socket communication " + error.getMessage());
+				  return ;
 			  }
 		   }
 	   

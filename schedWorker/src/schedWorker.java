@@ -19,9 +19,10 @@ public class schedWorker {
 	
 	   public static  void bindDatagramSocket() {
 		   try {
-			   cInfo.serverSocket = new DatagramSocket(9876);
+			   cInfo.serverSocket = new DatagramSocket(9810);
 		   } catch (Exception error) {
 				  System.err.println("Error in socket communication " + error.getMessage());
+			
 		   }
 	   }
 	   
@@ -32,7 +33,7 @@ public class schedWorker {
 	static String xmlInput = "<request><task><taskid>1</taskid><taskstr>sleep 1000</taskstr></task></request>";
 	public static void main(String[] args) throws InterruptedException {
 		// TODO Auto-generated method stub
-		int num_worker = 5;
+		int num_worker = 1;
 		int i;
 		int taskId = 0 ;
 		cInfo = new commonInfo();

@@ -53,6 +53,7 @@ public class worker extends Thread {
 	      
 	     fact1.setValidating(true);
 	 	 fact1.setIgnoringElementContentWhitespace(true);
+	 	 System.out.println("Worker " + threadId + " started");
 	 	 try {
 			build1 = fact1.newDocumentBuilder();
 		} catch (ParserConfigurationException e1) {
@@ -63,7 +64,8 @@ public class worker extends Thread {
 	    	// Once Started the thread should always be active;
 	    	// Waiting for job to get queued 
 	   try {
-		inpStr = cInfo.taskQ.take();
+		  // System.out.println(threadId + " Waiting for task");
+		   inpStr = cInfo.taskQ.take();
 	   	} catch (InterruptedException e1) {
 		// TODO Auto-generated catch block
 		e1.printStackTrace();
@@ -91,7 +93,7 @@ public class worker extends Thread {
 	   }
 	   */
 	   found = false ; 
-	   System.out.println("Thread Id = " + threadId + " Task Name " + inpStr ); 
+	   System.out.print("Worker = " + threadId + " Received task : Len " + inpStr.length() +" Task Name " + inpStr +"ABC" ); 
 	   try {
 		   	 ByteArrayInputStream astream = 
 						 new ByteArrayInputStream(inpStr.getBytes());
@@ -105,17 +107,17 @@ public class worker extends Thread {
 				  txtTaskId = (Text) taskId.item(0).getFirstChild();
 				 NodeList taskStr  = task.getElementsByTagName("taskstr");
 				  txtTaskStr = (Text) taskStr.item(0).getFirstChild();
-				 //System.out.println("task id = " + txtTaskId.getData() );
-				 //System.out.println("task str = " + txtTaskStr.getData() );
+				 System.out.println("task id = " + txtTaskId.getData() );
+				 System.out.println("task str = " + txtTaskStr.getData() );
 			 }
 
 		 }
 		 catch (Exception error) {
-			 //System.err.println("Error parsing : " + error.getMessage());
+			 System.err.println("Error parsing : " + error.getMessage());
 		 }
 	   
 	   sleepTime =  getSleepTime(txtTaskStr.getData()); 
-	   
+	   System.out.println(threadId + " Actual sleep task here");
         // Actual sleep task here 
 		try {
 		    //System.out.print(date.toString());
@@ -130,7 +132,7 @@ public class worker extends Thread {
 		}
 		// Job Done Send result to scheduler 
 		response = "<response><task><taskid>" + txtTaskId.getData() + "</taskid><taskstr>" + txtTaskStr.getData() + "</taskstr><taskresult>1</taskresult></task></response>";
-
+		System.out.println(threadId +" "  +response);
 		cInfo.resultQ.add(response);
 	}
 	}
