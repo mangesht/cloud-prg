@@ -1,10 +1,5 @@
-import java.io.BufferedInputStream;
-import java.io.ByteArrayInputStream;
-import java.util.ArrayList;
-import java.net.*;
-import java.io.*;
 
-import java.util.Date;
+import java.net.*;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 
@@ -18,40 +13,41 @@ public class schedWorker {
 	static commonInfo cInfo; 
 	
 	static void displayHelp() { 
-		
+		System.out.println("Usage : " + 
+				"java schedWorker -s <listening_port> " +
+								 "-l <num_localworkers>" +
+								 " [-r] ");
 	}
-	   public static  void bindDatagramSocket() {
-		   try {
-			   cInfo.serverSocket = new DatagramSocket(9810);
-		   } catch (Exception error) {
-				  System.err.println("Error in socket communication " + error.getMessage());
-			
-		   }
+	
+    public static  void bindDatagramSocket() {
+	   try {
+		   cInfo.serverSocket = new DatagramSocket(cInfo.serverPort);
+				   				
+			System.out.println("Bind to datagram socket at port " + cInfo.serverPort);		   
+	   } catch (Exception error) {
+			  System.err.println("Error in socket communication " + error.getMessage());
 	   }
-	   
-	public static String makeJob(int tid, int t) { 
-		String task = "<request><task><taskid>"+tid+"</taskid><taskstr>sleep "+ t +" </taskstr></task></request>";
-		return task;
-	}
-	static String xmlInput = "<request><task><taskid>1</taskid><taskstr>sleep 1000</taskstr></task></request>";
-	public static void main(String[] args) throws InterruptedException {
-		// TODO Auto-generated method stub
-		//int localWorkers = 1;
-		int i;
-		int idx=0;
-		int taskId = 0 ;
-		String str;
-		cInfo = new commonInfo();
+    }
+
+    public static boolean parseArgs(String[] args) {
+		String str;    	
 		// Input Parsing 
 		int argsLen = 0;
+		int idx=0;		
 		argsLen = args.length ;
+		
+		cInfo = new commonInfo();
+		cInfo.remoteWorker = false;
+		cInfo.localWorkers = 0;
+		cInfo.serverPort = 0;
 		
 		while(idx < argsLen ) {
 			str = args[idx];
-			 if(str.charAt(0) == '-'){
+			if(str.charAt(0) == '-'){
 				 if(str.charAt(1) == 'h'){
 					 //help
 					 displayHelp();
+
 				 }else if(str.charAt(1) == 's'){
 					 // Server Port where client send tasks 
 					 cInfo.serverPort  = Integer.parseInt(args[idx+1]) ;                                                 
@@ -63,68 +59,73 @@ public class schedWorker {
 				 }else if(str.charAt(1) == 'r'){
 					 cInfo.remoteWorker = true; 
 				 }
+				 idx++;
 			 }
+			 else {
+				 idx++;
+			 }
+		}
+		
+		if(cInfo.serverPort == 0 ){
+			System.err.println("Quiting Since no serverport not provided ");
+			return false;
+		}
+		else {
+			System.out.println("Server Port =  " + cInfo.serverPort );
 		}
 		
 		if(cInfo.remoteWorker == false && cInfo.localWorkers == 0 ){
 			System.out.println("Quiting Since no worker is present ");
-			return ;
-			
+			return false;
 		}
-		String job = "<request><task><taskid>1</taskid><taskstr>sleep 1000</taskstr></task></request>";
+		else {
+			System.out.println("remoteWorker =  " + cInfo.remoteWorker +
+						       "localworkers = " + cInfo.localWorkers);
+		}
+	
+		return true;
+    }
+    
+    public static void initialiseQueues() {
 		BlockingQueue <String> taskQ = new ArrayBlockingQueue<String>(1024);
-		BlockingQueue <String> resultQ =   new ArrayBlockingQueue<String>(1024);
+		BlockingQueue <String> resultQ =   new ArrayBlockingQueue<String>(1024);    
+		cInfo.taskQ = taskQ; 
+		cInfo.resultQ = resultQ;
+		System.out.println("Queue initialised");
+		return ;
+    }
+    
+	public static void main(String[] args) throws InterruptedException {
+		boolean bRet = false;
 
+		bRet = parseArgs(args);
+		
+		if (bRet == false) {
+			System.out.println("Error in arguments");			
+			return;
+		}
+		
+		initialiseQueues();
 		
 		bindDatagramSocket() ;
-		cInfo.taskQ = taskQ; 
-		cInfo.resultQ = resultQ; 
-		worker w_node[] = new worker[cInfo.localWorkers];
-		// Result Collector start
+ 
+		/* Start Result Collector Thread */
 		resultCollector resCollector = new resultCollector();
 		resCollector.cInfo = cInfo; 
-		
-		/*
-		resCollector.resultQ = resultQ;
-		resCollector.serverSocket = cInfo.serverSocket;
-		resCollector.IPAddress = cInfo.IPAddress; 
-		resCollector.port = cInfo.port;
-		*/  
 		resCollector.start();
 		
-		// Workers start 
-		for(i=0;i<cInfo.localWorkers;i++){
+		/* Start Worker Threads */	
+		worker w_node[] = new worker[cInfo.localWorkers];
+		for(int i=0;i<cInfo.localWorkers;i++){
 			w_node[i] = new worker(i);
 			w_node[i].cInfo = cInfo; 
 			w_node[i].start();
 		}
-		// taskReceiver start
+		
+		/* Start Request Receiver Thread */
 		taskReceiver server = new taskReceiver ();
 		server.cInfo= cInfo;  
-		/*
-		server.taskQ = taskQ; 
-		server.IPAddress = IPAddress;
-		server.port = port;
-		server.serverSocket = serverSocket;
-		*/ 
-		server.start(); 
-		/*
-		Thread.sleep(2000);
-		// Put a job in the queue randomly
-		taskQ.put(makeJob(taskId++,100));
-		taskQ.add(makeJob(taskId++,200));
-		Thread.sleep(200);
-		taskQ.put(makeJob(taskId++,300));
-		
-		Thread.sleep(200);
-		taskQ.put(makeJob(taskId++,400));
-		Thread.sleep(200);
-		taskQ.put(makeJob(taskId++,500));
-		Thread.sleep(200);
-		taskQ.put(makeJob(taskId++,600));
-	 	*/ 
-	 
+		server.start();
 		
 	}
-
 }
