@@ -70,7 +70,7 @@ public class p4client {
 		  InetAddress IPAddress = InetAddress.getByName("localhost");
 		  byte[] sendData = new byte[1024];
 		  sendData = xmlRequest.getBytes();
-		  DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, IPAddress, 9876);
+		  DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, IPAddress, Integer.valueOf(serverPort));
 		  clientSocket.send(sendPacket);
 	    }
 	    catch (Exception error){
