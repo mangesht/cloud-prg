@@ -19,7 +19,7 @@ public class taskReceiver extends Thread {
 				  cInfo.IPAddress = receivePacket.getAddress();
 				  cInfo.port = receivePacket.getPort();
 				  taskRequestXML = taskRequestXML.trim();
-				  //	taskRequestXML = "<request><task><taskid>" +"1" + "</taskid><taskstr>sleep "+ "1000" +" </taskstr></task></request>";
+				  //taskRequestXML = "<request><task><taskid>" +"1" + "</taskid><taskstr>sleep "+ "1000" +" </taskstr></task></request>";
 				  System.out.println("RECEIVED: Length "+ taskRequestXML.length() + taskRequestXML); 
 				  cInfo.taskQ.put(taskRequestXML);
 			      

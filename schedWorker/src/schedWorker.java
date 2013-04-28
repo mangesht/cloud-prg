@@ -17,6 +17,9 @@ public class schedWorker {
 
 	static commonInfo cInfo; 
 	
+	static void displayHelp() { 
+		
+	}
 	   public static  void bindDatagramSocket() {
 		   try {
 			   cInfo.serverSocket = new DatagramSocket(9810);
@@ -33,18 +36,50 @@ public class schedWorker {
 	static String xmlInput = "<request><task><taskid>1</taskid><taskstr>sleep 1000</taskstr></task></request>";
 	public static void main(String[] args) throws InterruptedException {
 		// TODO Auto-generated method stub
-		int num_worker = 1;
+		//int localWorkers = 1;
 		int i;
+		int idx=0;
 		int taskId = 0 ;
+		String str;
 		cInfo = new commonInfo();
+		// Input Parsing 
+		int argsLen = 0;
+		argsLen = args.length ;
+		
+		while(idx < argsLen ) {
+			str = args[idx];
+			 if(str.charAt(0) == '-'){
+				 if(str.charAt(1) == 'h'){
+					 //help
+					 displayHelp();
+				 }else if(str.charAt(1) == 's'){
+					 // Server Port where client send tasks 
+					 cInfo.serverPort  = Integer.parseInt(args[idx+1]) ;                                                 
+					 idx++;
+				 }else if(str.charAt(1) == 'l'){
+					 // Number of Local workers 
+					 cInfo.localWorkers= Integer.parseInt(args[idx+1]) ;                                                 
+					 idx++;
+				 }else if(str.charAt(1) == 'r'){
+					 cInfo.remoteWorker = true; 
+				 }
+			 }
+		}
+		
+		if(cInfo.remoteWorker == false && cInfo.localWorkers == 0 ){
+			System.out.println("Quiting Since no worker is present ");
+			return ;
+			
+		}
 		String job = "<request><task><taskid>1</taskid><taskstr>sleep 1000</taskstr></task></request>";
 		BlockingQueue <String> taskQ = new ArrayBlockingQueue<String>(1024);
 		BlockingQueue <String> resultQ =   new ArrayBlockingQueue<String>(1024);
 
+		
 		bindDatagramSocket() ;
 		cInfo.taskQ = taskQ; 
 		cInfo.resultQ = resultQ; 
-		worker w_node[] = new worker[num_worker];
+		worker w_node[] = new worker[cInfo.localWorkers];
 		// Result Collector start
 		resultCollector resCollector = new resultCollector();
 		resCollector.cInfo = cInfo; 
@@ -58,7 +93,7 @@ public class schedWorker {
 		resCollector.start();
 		
 		// Workers start 
-		for(i=0;i<num_worker;i++){
+		for(i=0;i<cInfo.localWorkers;i++){
 			w_node[i] = new worker(i);
 			w_node[i].cInfo = cInfo; 
 			w_node[i].start();
