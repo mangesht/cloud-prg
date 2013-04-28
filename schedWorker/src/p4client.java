@@ -2,9 +2,7 @@ import java.io.*;
 import javax.xml.parsers.*;
 import org.w3c.dom.*;
 import java.net.*;
-
 public class p4client {
-	
 	
 	static String xmlRequest=null;
 	static String taskFile=null;
@@ -13,7 +11,7 @@ public class p4client {
 	static DatagramSocket clientSocket=null;
 	
 	public static void displayHelp() {
-		// -w fileName -s url //[-n numThreads] -c command
+		// -f fileName -u url [-n numThreads] -c command
 	}
 	
 	public static void receiveResponseFromScheduler() {
@@ -72,7 +70,7 @@ public class p4client {
 		  InetAddress IPAddress = InetAddress.getByName("localhost");
 		  byte[] sendData = new byte[1024];
 		  sendData = xmlRequest.getBytes();
-		  DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, IPAddress,Integer.valueOf(serverPort));
+		  DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, IPAddress, 9876);
 		  clientSocket.send(sendPacket);
 	    }
 	    catch (Exception error){
@@ -82,6 +80,8 @@ public class p4client {
 	
 	public static void printResponse(String xmlResponse)
 	{
+		//System.out.println("Response={" + xmlResponse + "}");
+		
 		try {
 			DocumentBuilderFactory fact1 = DocumentBuilderFactory.newInstance();
 			fact1.setValidating(false);
@@ -100,18 +100,22 @@ public class p4client {
 				NodeList tasks  = taskBlock.getChildNodes();
 				for (int j = 0; j < tasks.getLength(); j++) {
 					Element task  = (Element) tasks.item(j);
-					NodeList taskId  = task.getElementsByTagName("TASKID");
+					NodeList taskId  = task.getElementsByTagName("taskid");
 					Text txtTaskId = (Text) taskId.item(0).getFirstChild();
-					NodeList taskStrNode  = task.getElementsByTagName("TASKSTR");
-					Text txtTaskStr = (Text) taskStrNode.item(0).getFirstChild();				
+					NodeList taskStrNode  = task.getElementsByTagName("taskstr");
+					Text txtTaskStr = (Text) taskStrNode.item(0).getFirstChild();
+					NodeList taskStatusNode  = task.getElementsByTagName("taskstatus");
+					Text txtTaskStatus = (Text) taskStatusNode.item(0).getFirstChild();	
 					System.out.println("task id = " + txtTaskId.getData() + " " +
-									   "task str = " + txtTaskStr.getData());
+									   "task str = " + txtTaskStr.getData() + " " +
+									   "task status = " + txtTaskStatus.getData());
 				}
 			}
 		}
 		catch (Exception error) {
 			System.err.println("Error parsing : " + error.getMessage());
-		}		
+		}
+				
 	}
 	
 	public static void generateRequestXMLFile(int blockSize) 
@@ -133,7 +137,7 @@ public class p4client {
 				if (taskStr == null) {
 					break;
 				}
-				//xmlRequest += "<taskBlock>";			
+				xmlRequest += "<taskBlock>";			
 				while (taskStr != null) {
 					xmlRequest +="<task>";
 					taskid++;
@@ -147,7 +151,7 @@ public class p4client {
 					}
 					
 				}
-				//xmlRequest += "</taskBlock>";			
+				xmlRequest += "</taskBlock>";			
 				
 				if (taskStr == null) {
 					endOfParsing = true;
@@ -225,4 +229,3 @@ public class p4client {
 
 	}
 }
-	
