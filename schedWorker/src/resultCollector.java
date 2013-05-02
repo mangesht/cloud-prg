@@ -14,28 +14,27 @@ public class resultCollector extends Thread {
 	
 	public void run(){
 		String res=""; 
-		while(true) {
+		while(true) { 
 			if(cInfo.remoteWorker == false ){
-					try {
-					res = cInfo.resultQ.take();
-				} catch (InterruptedException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-					
-					// Task done at some worker , send this info to client 
-					   
-			       byte[] sendData = new byte[1024];
-			       try {
-				   System.out .println("Port = " + cInfo.port );
-				   sendData = res.getBytes();
-				   sendPacket = new DatagramPacket(sendData, sendData.length, 
-						   					cInfo.IPAddress, cInfo.port);
-				   cInfo.serverSocket.send(sendPacket);
-			       } catch (Exception error) {
-			 		  System.err.println("Result COllector : " + 
-			 				"Error in socket communication " + error.getMessage());
-			 	   }  
+			try {
+				res = cInfo.resultQ.take();
+			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			// Task done at some worker , send this info to client 
+			   
+	       byte[] sendData = new byte[1024];
+	       try {
+		   System.out .println("Port = " + cInfo.port );
+		   sendData = res.getBytes();
+		   sendPacket = new DatagramPacket(sendData, sendData.length, 
+				   					cInfo.IPAddress, cInfo.port);
+		   cInfo.serverSocket.send(sendPacket);
+	       } catch (Exception error) {
+	 		  System.err.println("Result COllector : " + 
+	 				"Error in socket communication " + error.getMessage());
+	 	   }   
 			} else {
 				List<Message> messages = null ;
 				ReceiveMessageRequest receiveMessageRequest = new ReceiveMessageRequest(cInfo.resultQueueUrl);
@@ -91,8 +90,7 @@ public class resultCollector extends Thread {
 	            cInfo.sqs.deleteMessage(new DeleteMessageRequest(cInfo.resultQueueUrl , messageRecieptHandle));
 	            
 			}
- 	       System.out.println(res);
+	       System.out.println(res);
 		}
 	}
 }
-

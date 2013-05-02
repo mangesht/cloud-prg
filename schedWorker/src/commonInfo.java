@@ -14,13 +14,21 @@ public class commonInfo {
 	public boolean remoteWorker;
 	public int localWorkers; 
 	public DatagramSocket serverSocket; 
+	public worker w_node[];
+	public final int local = 1;
+	public final int remote = 2;
+	public final int available = 1;
+	public final int busy = 0;
+	public int localAvailWorkerCount;
+	public int remoteAvailWorkerCount;
 	public AmazonSQS sqs ;
 	public String taskQueueUrl  ; 
 	public String resultQueueUrl;
 	public int maxRemoteWorkers;
+		
 	commonInfo () {
-		remoteWorker = true;
-		localWorkers = 0;
+		remoteWorker = false;
+		localWorkers = 1;
 		serverPort = 9100;
 		maxRemoteWorkers = 32 ; 
 	}

@@ -75,24 +75,26 @@ public class schedWorker {
 			 }
 		}
 		
-		/*if(cInfo.serverPort == 0 ){
+		if(cInfo.serverPort == 0 ){
 			System.err.println("Quiting Since no serverport not provided ");
 			return false;
 		}
-		*/
-		{
+		else {
 			System.out.println("Server Port =  " + cInfo.serverPort );
 		}
 		if(cInfo.remoteWorker == true && cInfo.localWorkers != 0 ){
 			// You only need to support either local OR remote workers at one time. 
 			// If both are specified, then the remote workers should be used - Ioan 
-			
+		    // This had been taken care in the inner-flow, however let this laos
+			// be here - it becomes more clear
+			 	
 			cInfo.localWorkers = 0 ; 
 		}
 		if(cInfo.remoteWorker == false && cInfo.localWorkers == 0 ){
 			System.out.println("Quiting Since no worker is present ");
 			return false;
-		}else {
+		}
+		else {
 			System.out.println("remoteWorker =  " + cInfo.remoteWorker +
 						       "localworkers = " + cInfo.localWorkers);
 		}
@@ -109,7 +111,7 @@ public class schedWorker {
 		return ;
     }
     
-	public static  void main(String[] args) throws InterruptedException {
+	public static void main(String[] args) throws InterruptedException {
 		boolean bRet = false;
 
 		bRet = parseArgs(args);
@@ -128,13 +130,20 @@ public class schedWorker {
 		resCollector.cInfo = cInfo; 
 		resCollector.start();
 		
-		/* Start Worker Threads */	
-		worker w_node[] = new worker[cInfo.localWorkers];
+		/* Start Worker Threads */
+		/* Moved worker to cinfo, as i need to have
+		 * per worker statistics also there and this would be 
+		 * used in taskReceiver ..
+		 */	
+		cInfo.w_node = new worker[cInfo.localWorkers];
 		for(int i=0;i<cInfo.localWorkers;i++){
-			w_node[i] = new worker(i);
-			w_node[i].cInfo = cInfo; 
-			w_node[i].start();
+			cInfo.w_node[i] = new worker(i);
+			cInfo.w_node[i].cInfo = cInfo;
+			cInfo.w_node[i].type = cInfo.local;
+			cInfo.w_node[i].status = cInfo.available;
+			cInfo.w_node[i].start();
 		}
+		cInfo.localAvailWorkerCount = cInfo.localWorkers;
 		
 		/* Start Request Receiver Thread */
 		taskReceiver server = new taskReceiver ();

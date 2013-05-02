@@ -9,12 +9,15 @@ public class p4client {
 	static String serverIpAddress=null; 
 	static String serverPort=null;
 	static DatagramSocket clientSocket=null;
+	static int taskRecievedCount=0;
+	static int taskSentCount=0;
 	
 	public static void displayHelp() {
 		// -f fileName -u url [-n numThreads] -c command
 	}
 	
 	public static void receiveResponseFromScheduler() {
+
 		if (xmlRequest == null) {
 			System.err.println("no task request, returning");
 			return;
@@ -34,20 +37,27 @@ public class p4client {
 			System.err.println("request not yet sent to scheduler");
 			return;					
 		}
-		
+		System.out.println("Waiting for response from server");
+		while(true) {
 	    try {	
 		  byte[] receiveData = new byte[1024];
 		  DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
 		  clientSocket.receive(receivePacket);
 		  String taskresponse = new String(receivePacket.getData());
-		  taskresponse = taskresponse.substring(0, (taskresponse.lastIndexOf('>') + 1));
+		  taskresponse = taskresponse.trim();
 		  System.out.println("FROM SERVER:{" + taskresponse + "}");
-		  printResponse(taskresponse);
-		  clientSocket.close();
+		  taskRecievedCount += printResponse(taskresponse);
+		  if (taskRecievedCount == taskSentCount) {
+			  break;
+		  }
 	    }
 	    catch (Exception error){
 		  System.err.println("Error in socket communication " + error.getMessage());
 	    }
+		}
+		
+	    clientSocket.close();
+
 	}
 	
 	public static void sendRequestToScheduler() {
@@ -67,21 +77,23 @@ public class p4client {
 		}
   	    try {	
 		  clientSocket = new DatagramSocket();
-		  InetAddress IPAddress = InetAddress.getByName("localhost");
+		  InetAddress IPAddress = InetAddress.getByName(serverIpAddress);
 		  byte[] sendData = new byte[1024];
 		  sendData = xmlRequest.getBytes();
-		  DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, IPAddress, Integer.valueOf(serverPort));
+		  DatagramPacket sendPacket = new DatagramPacket(sendData,
+				  		sendData.length, IPAddress, Integer.valueOf(serverPort));
 		  clientSocket.send(sendPacket);
+		  System.out.println("SENTXMLFILE=" + xmlRequest);
 	    }
 	    catch (Exception error){
 		  System.err.println("Error in socket communication " + error.getMessage());
 	    }
 	}
 	
-	public static void printResponse(String xmlResponse)
+	public static int printResponse(String xmlResponse)
 	{
 		//System.out.println("Response={" + xmlResponse + "}");
-		
+		int taskCount = 0;
 		try {
 			DocumentBuilderFactory fact1 = DocumentBuilderFactory.newInstance();
 			fact1.setValidating(false);
@@ -109,55 +121,73 @@ public class p4client {
 					System.out.println("task id = " + txtTaskId.getData() + " " +
 									   "task str = " + txtTaskStr.getData() + " " +
 									   "task status = " + txtTaskStatus.getData());
+					taskCount++;
 				}
 			}
 		}
 		catch (Exception error) {
 			System.err.println("Error parsing : " + error.getMessage());
 		}
-				
+		return 	taskCount;	
 	}
 	
-	public static void generateRequestXMLFile(int blockSize) 
+	public static void generateRequestXMLFile() 
 	{
 		int taskid = 0;
+		int taskCount;
 		String taskStr;
-		int xmlBlocksize = 0;
+		String batchJob;
+		
+		String xmltaskRequest="";
 		boolean endOfParsing = false;
 		try {
 			System.out.println("Task File : " + taskFile);			
 			FileReader freader = new FileReader(taskFile);
 			BufferedReader breader = new BufferedReader(freader);
-			xmlRequest = "";
-			xmlRequest += "<request>";
 			taskStr = breader.readLine();
+			xmlRequest = "<request>";			
 			while (endOfParsing == false) {
 
-				xmlBlocksize = 0;
 				if (taskStr == null) {
 					break;
 				}
-				xmlRequest += "<taskBlock>";			
+
+				batchJob = "false";
+				taskCount = 0;
+				xmltaskRequest = "";
 				while (taskStr != null) {
-					xmlRequest +="<task>";
-					taskid++;
-					xmlRequest += "<taskid>" + taskid + "</taskid>";
-					xmlRequest += "<taskstr>" + taskStr + "</taskstr>";
-					xmlRequest +="</task>";
-					xmlBlocksize++;
-					taskStr = breader.readLine();
-					if ((blockSize != 0) && (xmlBlocksize == blockSize)) {
-						break;
+					if (taskStr.equals("==batchStart==")) {
+						batchJob="true" ;
+						System.out.print("batchjobstart:noSplit = true; ");
 					}
-					
+					else if (taskStr.equals("==batchEnd==")) {
+						System.out.print("batchjobend: ");
+						taskStr = breader.readLine();
+						break;
+					} else {
+						System.out.println("taskStr = " + taskStr);
+						xmltaskRequest +="<task>";
+						taskid++;
+						taskCount++;
+						taskSentCount++;
+						xmltaskRequest += "<taskid>" + taskid + "</taskid>";
+						xmltaskRequest += "<taskstr>" + taskStr + "</taskstr>";
+						xmltaskRequest +="</task>";
+					}
+					taskStr = breader.readLine();
 				}
+				xmlRequest += "<taskBlock batchJob=\"" + batchJob + "\" " +
+						  			    " taskNodes=\"" + taskCount + "\">";
+				xmlRequest += xmltaskRequest;
 				xmlRequest += "</taskBlock>";			
+				
 				
 				if (taskStr == null) {
 					endOfParsing = true;
 				}
 			}
 			xmlRequest += "</request>";
+			
 			freader.close();
 
 		}
@@ -220,7 +250,7 @@ public class p4client {
 	public static void main(String[] args) {
 		parseArgs(args);
 		
-		generateRequestXMLFile(2);
+		generateRequestXMLFile();
 		
 		sendRequestToScheduler();
 		

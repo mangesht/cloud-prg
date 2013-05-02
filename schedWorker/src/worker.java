@@ -6,6 +6,8 @@ public class worker extends Thread {
 	public commonInfo cInfo; 
 	long sleepTime ;
 	public int threadId;
+	public int status;
+	public int type;	
 	String taskResponseXML="";
 	
 	DocumentBuilderFactory fact1 = DocumentBuilderFactory.newInstance();
@@ -33,11 +35,13 @@ public class worker extends Thread {
 		 
 	}
 	
-	public boolean executeTask(Text txtTaskStr) {
+	public boolean executeTask(Text txtTaskId, Text txtTaskStr) {
 		// Currently only sleep task is accepted as per the project
 		   sleepTime =  getSleepTime(txtTaskStr.getData()); 
-		   System.out.println(threadId + " Actual sleep task here");
-	        // Actual sleep task here 
+		   System.out.println("localworker " + threadId +
+				   					" sleepTime = " + sleepTime +
+				   					" taskid = " + txtTaskId.getData());
+
 			try {
 				sleep(sleepTime);
 				return true;
@@ -48,10 +52,41 @@ public class worker extends Thread {
 			}
 	}
 	
+	public String  processCompleteBlock(Element taskBlock) {
+		String responseXML = "";
+		NodeList tasks  = taskBlock.getChildNodes();
+		responseXML += "<taskblock>"; 
+		for (int j = 0; j < tasks.getLength(); j++) {
+			Element task  = (Element) tasks.item(j);
+			boolean result;
+			
+			responseXML += "<task>";					
+			NodeList taskId  = task.getElementsByTagName("taskid");
+			
+			Text txtTaskId = (Text) taskId.item(0).getFirstChild();
+			responseXML += "<taskid>" + txtTaskId.getData() + "</taskid>";					
+			//System.out.println(responseXML);
+			NodeList taskStrNode  = task.getElementsByTagName("taskstr");
+			
+			Text txtTaskStr = (Text) taskStrNode.item(0).getFirstChild();
+
+			
+			responseXML += "<taskstr>" + txtTaskStr.getData() + "</taskstr>";
+			//System.out.println(responseXML);			
+			result = executeTask(txtTaskId, txtTaskStr);		
+			if (result == true) {
+				responseXML += "<taskstatus>" + "success" + "</taskstatus>";
+			} else {
+				responseXML += "<taskstatus>" + "failure" + "</taskstatus>";
+			}
+			responseXML += "</task>";	
+		}
+		responseXML += "</taskblock>";	
+		return responseXML;
+	}
+	
 	public void parseRequest(String xmlRequest)
 	{
-
-	   
 	   xmlRequest = xmlRequest.trim();
 		try {
 			DocumentBuilderFactory fact1 = DocumentBuilderFactory.newInstance();
@@ -65,38 +100,11 @@ public class worker extends Thread {
 			Element requestElement =  requestDoc.getDocumentElement();
 			NodeList taskBlockNode = requestElement.getChildNodes();
 			taskResponseXML = "<response>";
-			
 			for (int i = 0; i < taskBlockNode.getLength(); i++) {
 				Element taskBlock  = (Element) taskBlockNode.item(i);
-				NodeList tasks  = taskBlock.getChildNodes();
-				taskResponseXML += "<taskblock>"; 
-				for (int j = 0; j < tasks.getLength(); j++) {
-					Element task  = (Element) tasks.item(j);
-					boolean result;
-					
-					taskResponseXML += "<task>";					
-					NodeList taskId  = task.getElementsByTagName("taskid");
-					Text txtTaskId = (Text) taskId.item(0).getFirstChild();
-					taskResponseXML += "<taskid>" + txtTaskId.getData() + "</taskid>";					
-					
-					NodeList taskStrNode  = task.getElementsByTagName("taskstr");
-					
-					Text txtTaskStr = (Text) taskStrNode.item(0).getFirstChild();
-					
-					taskResponseXML += "<taskstr>" + txtTaskStr.getData() + "</taskstr>";	
-					result = executeTask(txtTaskStr);		
-					if (result == true) {
-					taskResponseXML += "<taskstatus>" + "success" + "</taskstatus>";
-					} else {
-					taskResponseXML += "<taskstatus>" + "failure" + "</taskstatus>";
-					}
-					taskResponseXML += "</task>";	
-				}
-				taskResponseXML += "</taskblock>";	
-				
+				taskResponseXML += processCompleteBlock(taskBlock);
 			}
 			taskResponseXML += "</response>";	
-			
 		}
 		catch (Exception error) {
 			System.err.println("Error parsing : " + error.getMessage());
@@ -107,8 +115,26 @@ public class worker extends Thread {
 	   parseRequest(taskRequestXML);
    }
    
+   public void putResponseIntoQueue(String taskResponseXML) {
+	   cInfo.resultQ.add(taskResponseXML);
+	   status = cInfo.available;
+	   cInfo.localAvailWorkerCount++;
+   }
+   
+   public String getRequestFromQueue() {
+	String inpStr = "";	   
+   	try {
+		inpStr = cInfo.taskQ.take();
+		status = cInfo.busy;
+		cInfo.localAvailWorkerCount--;
+	} catch (InterruptedException e1) {
+		e1.printStackTrace();
+    }
+   	return inpStr;
+   }
+   
 	public void run(){
-		 String inpStr = "";
+		 String requestXML;
          //Get the task from Queue
 	     fact1.setValidating(false);
 	 	 fact1.setIgnoringElementContentWhitespace(true);
@@ -120,18 +146,13 @@ public class worker extends Thread {
 		 }
 	 	 
 	     while(true) { 
-	    	try {
-	    		// System.out.println(threadId + " Waiting for task");
-	    		inpStr = cInfo.taskQ.take();
-	    	} catch (InterruptedException e1) {
-	    		e1.printStackTrace();
-	        }
+    	   requestXML = getRequestFromQueue();
 		   System.out.print("Worker = " + threadId + 
-				   			" Received task : Len " + inpStr.length() + 
-				   			" Task Name " + inpStr +"ABC" );
-		   processRequest(inpStr);
+				   			" Received task : Len " + requestXML.length() + 
+				   			" Task : " + requestXML  );
+		   processRequest(requestXML);
 	   
-		   cInfo.resultQ.add(taskResponseXML);
+		   putResponseIntoQueue(taskResponseXML);
 	     }
 	}
 }
