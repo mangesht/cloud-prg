@@ -141,5 +141,9 @@ public class schedWorker {
 		server.cInfo= cInfo;  
 		server.start();
 		
+		/* Start scheduler */ 
+		scheduler sched = new scheduler();  
+		sched.cInfo = cInfo; 
+		sched.start();
 	}
 }

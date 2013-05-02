@@ -17,9 +17,11 @@ public class commonInfo {
 	public AmazonSQS sqs ;
 	public String taskQueueUrl  ; 
 	public String resultQueueUrl;
+	public int maxRemoteWorkers;
 	commonInfo () {
 		remoteWorker = true;
 		localWorkers = 0;
 		serverPort = 9100;
+		maxRemoteWorkers = 32 ; 
 	}
 }

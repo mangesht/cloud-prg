@@ -2,6 +2,7 @@ import java.net.*;
 import java.util.List;
 import java.util.Map.Entry;
 
+import com.amazonaws.AmazonServiceException;
 import com.amazonaws.services.sqs.model.DeleteMessageRequest;
 import com.amazonaws.services.sqs.model.Message;
 import com.amazonaws.services.sqs.model.ReceiveMessageRequest;
@@ -41,12 +42,19 @@ public class resultCollector extends Thread {
 				receiveMessageRequest .setMaxNumberOfMessages(1);
 				
 				while(true) { 
-					messages = cInfo.sqs.receiveMessage(receiveMessageRequest).getMessages();
-					if (messages.size() > 0 ) { 
-						break;
-					}else{
+					try { 
+						messages = cInfo.sqs.receiveMessage(receiveMessageRequest).getMessages();
+					}catch (AmazonServiceException e ) { 
+						System.out.println("Result Collector Rx Message" +  e.getMessage());
+					}
+					if (messages != null  ) {
+						System.out.println("Result Queue Size " + messages.size());
+						if (messages.size() > 0 ) 
+							break;
+					}
+					{
 						try {
-							sleep(1000);
+							sleep(10000);
 						} catch (InterruptedException e) {
 							// TODO Auto-generated catch block
 							e.printStackTrace();
