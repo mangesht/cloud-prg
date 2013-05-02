@@ -16,9 +16,10 @@ public class commonInfo {
 	public DatagramSocket serverSocket; 
 	public AmazonSQS sqs ;
 	public String taskQueueUrl  ; 
+	public String resultQueueUrl;
 	commonInfo () {
-		remoteWorker = false;
-		localWorkers = 1;
+		remoteWorker = true;
+		localWorkers = 0;
 		serverPort = 9100;
 	}
 }

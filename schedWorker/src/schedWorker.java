@@ -2,6 +2,8 @@
 import java.net.*;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
+
+import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.auth.ClasspathPropertiesFileCredentialsProvider;
 import com.amazonaws.services.sqs.AmazonSQSClient;
 
@@ -21,10 +23,12 @@ public class schedWorker {
 								 " [-r] ");
 	}
 
-	   public void SQSInit(){
-		   
+	   public static void SQSInit(){
+		 //  AWSCredentialsProvider awsCredentialsProvider = new ()
 		   cInfo.sqs = new AmazonSQSClient(new ClasspathPropertiesFileCredentialsProvider());
+
 		   cInfo.taskQueueUrl  = "https://sqs.us-east-1.amazonaws.com/571769354000/schedToWorker";
+		   cInfo.resultQueueUrl = "https://sqs.us-east-1.amazonaws.com/571769354000/workerToSched";
 	   }
 
     public static  void bindDatagramSocket() {
@@ -45,10 +49,7 @@ public class schedWorker {
 		argsLen = args.length ;
 		
 		cInfo = new commonInfo();
-		cInfo.remoteWorker = false;
-		cInfo.localWorkers = 0;
-		cInfo.serverPort = 0;
-		
+	
 		while(idx < argsLen ) {
 			str = args[idx];
 			if(str.charAt(0) == '-'){
@@ -74,19 +75,24 @@ public class schedWorker {
 			 }
 		}
 		
-		if(cInfo.serverPort == 0 ){
+		/*if(cInfo.serverPort == 0 ){
 			System.err.println("Quiting Since no serverport not provided ");
 			return false;
 		}
-		else {
+		*/
+		{
 			System.out.println("Server Port =  " + cInfo.serverPort );
 		}
-		
+		if(cInfo.remoteWorker == true && cInfo.localWorkers != 0 ){
+			// You only need to support either local OR remote workers at one time. 
+			// If both are specified, then the remote workers should be used - Ioan 
+			
+			cInfo.localWorkers = 0 ; 
+		}
 		if(cInfo.remoteWorker == false && cInfo.localWorkers == 0 ){
 			System.out.println("Quiting Since no worker is present ");
 			return false;
-		}
-		else {
+		}else {
 			System.out.println("remoteWorker =  " + cInfo.remoteWorker +
 						       "localworkers = " + cInfo.localWorkers);
 		}
@@ -103,7 +109,7 @@ public class schedWorker {
 		return ;
     }
     
-	public static void main(String[] args) throws InterruptedException {
+	public static  void main(String[] args) throws InterruptedException {
 		boolean bRet = false;
 
 		bRet = parseArgs(args);
@@ -112,7 +118,7 @@ public class schedWorker {
 			System.out.println("Error in arguments");			
 			return;
 		}
-		
+		SQSInit();
 		initialiseQueues();
 		
 		bindDatagramSocket() ;

@@ -33,8 +33,14 @@ public class taskReceiver extends Thread {
 			  cInfo.IPAddress = receivePacket.getAddress();
 			  cInfo.port = receivePacket.getPort();
 			  taskRequestXML = taskRequestXML.trim();
-			  System.out.println("RECEIVED: Length "+ taskRequestXML.length() + taskRequestXML); 
-			  cInfo.taskQ.put(taskRequestXML);
+			  System.out.println("RECEIVED: Length "+ taskRequestXML.length() + taskRequestXML);
+			  
+			  if (cInfo.remoteWorker == true ) { 
+				  remoteSend(taskRequestXML);
+			  }else { 
+				  cInfo.taskQ.put(taskRequestXML);  
+			  }
+			  
 		      
 		  } catch (Exception error) {
 			  System.err.println("Task Receiver : Error in socket communication " + error.getMessage());
