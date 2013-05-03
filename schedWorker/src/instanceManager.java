@@ -13,15 +13,18 @@ import com.amazonaws.regions.Regions;
 import com.amazonaws.services.ec2.AmazonEC2;
 import com.amazonaws.services.ec2.AmazonEC2Client;
 import com.amazonaws.services.ec2.model.CancelSpotInstanceRequestsRequest;
+import com.amazonaws.services.ec2.model.DescribeInstanceStatusResult;
 import com.amazonaws.services.ec2.model.DescribeSpotInstanceRequestsRequest;
 import com.amazonaws.services.ec2.model.DescribeSpotInstanceRequestsResult;
 import com.amazonaws.services.ec2.model.InstanceAttribute;
+import com.amazonaws.services.ec2.model.InstanceStatus;
 import com.amazonaws.services.ec2.model.LaunchSpecification;
 import com.amazonaws.services.ec2.model.RequestSpotInstancesRequest;
 import com.amazonaws.services.ec2.model.RequestSpotInstancesResult;
 import com.amazonaws.services.ec2.model.SpotInstanceRequest;
 import com.amazonaws.services.ec2.model.DescribeInstanceAttributeRequest;
 import com.amazonaws.services.ec2.model.DescribeInstanceAttributeResult;
+import com.amazonaws.services.ec2.model.DescribeInstanceStatusRequest;
 import com.amazonaws.services.sqs.AmazonSQS.*; 
 import com.amazonaws.services.sqs.model.GetQueueAttributesRequest;
 import com.amazonaws.services.sqs.model.GetQueueAttributesResult;
@@ -35,12 +38,16 @@ public class instanceManager extends Thread {
 	ArrayList<String> activeInstanceIds;
 	public int launchedCount; 
 	public int activeCount;
+	int lastActiveInstanceCount; 
+	int totalWorkers ;
 	ArrayList <String> ec2RequestId = new ArrayList<String>(); 
 	instanceManager(){
 		instanceInfo = new ArrayList<InstanceInfo>();
 		activeInstanceIds= new ArrayList<String>();
 		launchedCount = 0; 
 		activeCount = 0;
+		lastActiveInstanceCount = 0 ;
+		totalWorkers = 0;
 	}
 	public int getQueueSize() {
 		List<String> attributeNames = new ArrayList<String>();
@@ -124,7 +131,11 @@ public class instanceManager extends Thread {
 	        // Create the describeRequest with tall of the request id to monitor (e.g. that we started).
 	        DescribeSpotInstanceRequestsRequest describeRequest = new DescribeSpotInstanceRequestsRequest();
 	        describeRequest.setSpotInstanceRequestIds(ec2RequestId);
-
+	        System.out.print("Request Ids ");
+	        for(String e :ec2RequestId) { 
+	        	System.out.print( " " + e); 
+	        }
+	        System.out.println();
 	        // Initialize the anyOpen variable to false ??? which assumes there are no requests open unless
 	        // we find one that is still open.
 	        anyOpen=false;
@@ -139,14 +150,20 @@ public class instanceManager extends Thread {
 	            		// If the state is open, it hasn't changed since we attempted to request it.
 	            		// There is the potential for it to transition almost immediately to closed or
 	            		// cancelled so we compare against open instead of active.
-	            		if (describeResponse.getState().equals("open")) {
+	            	    //System.out.println("Status = " + describeResponse.getStatus());
+	            		if (describeResponse.getState().equals("active")) {
 	            			anyOpen = true;
-	            			break;
-	            		}
+	            			//break;
+	            		
 
 	            		// Add the instance id to the list we will eventually terminate.
 	            		successfulRequests.add(describeResponse.getSpotInstanceRequestId());
-	            		activeInstanceIds.add(describeResponse.getInstanceId());
+	            		
+	            		if( describeResponse.getInstanceId() != null) {
+	            			System.out.println("Adding " + describeResponse.getInstanceId()) ;
+	            			activeInstanceIds.add(describeResponse.getInstanceId());
+	            		}
+	            		}
 	            }
 	    	} catch (AmazonServiceException e) {
 	            // If we have an exception, ensure we don't break out of the loop.
@@ -175,14 +192,57 @@ public class instanceManager extends Thread {
 	    	
 	        for(String request : successfulRequests) { 
 	        	ec2RequestId.remove(request);
+	        	
 	        }
+	        
 	    	}
+	    	System.out.println("Monitor and cancel ends here");
 	}
 	
 	public void getInstanceHealthInfo(){ 
 		DescribeInstanceAttributeRequest dr = new DescribeInstanceAttributeRequest ();
-		
+		DescribeInstanceStatusRequest instStatusRequest = new DescribeInstanceStatusRequest ();
+		System.out.println("Getting Health");
+		for(String s : activeInstanceIds) { 
+			System.out.println("Getting Health for " + s );
+			
+		}
+		instStatusRequest.setInstanceIds(activeInstanceIds);
+		DescribeInstanceStatusResult res =  ec2.describeInstanceStatus();
+		List<InstanceStatus> stats = res.getInstanceStatuses();
+		ArrayList<String> localActiveInstanceIds = new ArrayList<String> () ; 
+		for (InstanceStatus s : stats) { 
+			System.out.println("Instance Id  = " + s.getInstanceId() +" Status " + s.getInstanceStatus() + "state " + s.getInstanceState());
+			if(s.getInstanceState().getCode() <= 16) { 
+				localActiveInstanceIds.add(s.getInstanceId());
+			}
+		}
+		/* Clean up the terminated instances */ 
+		 
+		ArrayList<String> localDeadInstanceIds = new ArrayList<String> () ;
+		 for(String s : activeInstanceIds) { 
+			 if(localActiveInstanceIds.contains(s)) { 
+				 // It is running instance 
+			 }else { 
+				 // It is dead instance 
+				 localDeadInstanceIds.add(s);
+			 }
+		 }
+		 int deadInstanceCount = localDeadInstanceIds.size();
+		 
+		 activeInstanceIds.removeAll(localDeadInstanceIds);
+		 
+		 activeCount = activeInstanceIds.size() ; 
+		 launchedCount -= activeCount - lastActiveInstanceCount + deadInstanceCount ; 
+		 launchedCount = launchedCount < 0 ? 0 : launchedCount; // Protection against malicious acts 
+		 System.out.println("Launched " + launchedCount + " Active " + activeCount +
+				 " LastActive " + lastActiveInstanceCount + " Dead Now " +deadInstanceCount );
+		 
+		 lastActiveInstanceCount =  activeInstanceIds.size();
+		 totalWorkers = launchedCount + activeCount;
+		/*
 		for(String instance : activeInstanceIds) { 
+			if(instance != null) { 
 			System.out.println("Getting health for instance = " + instance);
 			dr.setInstanceId(instance);
 			
@@ -195,9 +255,16 @@ public class instanceManager extends Thread {
 				 System.out.println("Getting Health error " + e.getMessage());
 			}
 			InstanceAttribute iAt = instHealthResult.getInstanceAttribute();
-			System.out.println(" Instance Status "+ iAt.toString());
 			
+			System.out.println(" Instance Status "+ iAt.toString());
+			System.out.println(" User Data "+iAt.getUserData() + iAt.getInstanceInitiatedShutdownBehavior());
+			System.out.println(" " + iAt.getInstanceType());
+			
+			}
+		 
+		
 		}
+		*/
 		
 	}
 	public void initilizeAmazonEC2() {
@@ -209,7 +276,7 @@ public class instanceManager extends Thread {
 	}
 	public void run(){
 		int numJobs;
-		int totalWorkers = 0 ;
+
 		//int activeWorkers = 0 ;
 		
 		int amazonKilled= 0;
@@ -221,6 +288,15 @@ public class instanceManager extends Thread {
 		
 	
 		initilizeAmazonEC2();
+		/*
+		// bewakuf 
+		//i-7257f71c
+		activeInstanceIds.add("i-7257f71c");
+		activeInstanceIds.add("i-f660fa93");
+		lastActiveInstanceCount = 2 ;
+		totalWorkers = 2  ;   
+		launchedCount = 0 ;
+		*/  
 		while(true){
 			numJobs = getQueueSize();
 			if (totalWorkers < cInfo.maxRemoteWorkers && numJobs > 0 ) {
