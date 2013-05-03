@@ -23,13 +23,13 @@ public class scheduler {
 								 " [-r] ");
 	}
 
-	   public static void SQSInit(){
+	public static void SQSInit(){
 		 //  AWSCredentialsProvider awsCredentialsProvider = new ()
 		   cInfo.sqs = new AmazonSQSClient(new ClasspathPropertiesFileCredentialsProvider());
 
 		   cInfo.taskQueueUrl  = "https://sqs.us-east-1.amazonaws.com/571769354000/schedToWorker";
 		   cInfo.resultQueueUrl = "https://sqs.us-east-1.amazonaws.com/571769354000/workerToSched";
-	   }
+	}
 
     public static  void bindDatagramSocket() {
 	   try {
