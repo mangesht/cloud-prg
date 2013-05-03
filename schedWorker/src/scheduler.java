@@ -128,7 +128,7 @@ public class scheduler {
 		/* Start Result Collector Thread */
 		resultCollector resCollector = new resultCollector();
 		resCollector.cInfo = cInfo; 
-		resCollector.start();
+		//resCollector.start();
 		
 		/* Start Worker Threads */
 		/* Moved worker to cinfo, as i need to have
@@ -149,6 +149,11 @@ public class scheduler {
 		taskReceiver server = new taskReceiver ();
 		server.cInfo= cInfo;  
 		server.start();
+		
+		/*Start scheduler client interface */
+		p4scheduler clientIntf = new p4scheduler();
+		clientIntf.cInfo = cInfo;
+		clientIntf.start(); 
 		
 		/* Start scheduler */ 
 		instanceManager sched = new instanceManager();  

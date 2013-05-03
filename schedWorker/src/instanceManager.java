@@ -159,7 +159,7 @@ public class instanceManager extends Thread {
 	    	//============================================================================================//
 	    	//====================================== Canceling the Request ==============================//
 	    	//============================================================================================//
-
+	    	if(successfulRequests.size() > 0) { 
 	        try {
 	        	// Cancel requests.
 	        	CancelSpotInstanceRequestsRequest cancelRequest = new CancelSpotInstanceRequestsRequest(successfulRequests);
@@ -176,15 +176,24 @@ public class instanceManager extends Thread {
 	        for(String request : successfulRequests) { 
 	        	ec2RequestId.remove(request);
 	        }
+	    	}
 	}
 	
 	public void getInstanceHealthInfo(){ 
 		DescribeInstanceAttributeRequest dr = new DescribeInstanceAttributeRequest ();
 		
-		for(String instance : activeInstanceIds) { 
+		for(String instance : activeInstanceIds) {
+			System.out.println("Getting health for instance = " + instance);
 			dr.setInstanceId(instance);
+			
+			dr.setAttribute("userData");
 			//i was here
-			DescribeInstanceAttributeResult instHealthResult = ec2.describeInstanceAttribute(dr);
+			DescribeInstanceAttributeResult instHealthResult = null;
+			try { 
+				 instHealthResult = ec2.describeInstanceAttribute(dr);
+			}catch(AmazonServiceException e) { 
+				 System.out.println("Getting Health error " + e.getMessage());
+			}
 			InstanceAttribute iAt = instHealthResult.getInstanceAttribute();
 			System.out.println(" Instance Status "+ iAt.toString());
 			
@@ -201,11 +210,11 @@ public class instanceManager extends Thread {
 	public void run(){
 		int numJobs;
 		int totalWorkers = 0 ;
-		int activeWorkers = 0 ;
-		int launchedWorkers = 0 ;
+		//int activeWorkers = 0 ;
+		
 		int amazonKilled= 0;
 		int iterminated = 0 ;
-		int workerToLaunch;
+		int workerToLaunch = 0;
 		int tCount = 0 ; 
 		spotInstancePrice = 0.007;
 		myAMIID = "ami-3fec7956";
@@ -216,30 +225,35 @@ public class instanceManager extends Thread {
 			numJobs = getQueueSize();
 			if (totalWorkers < cInfo.maxRemoteWorkers && numJobs > 0 ) {
 				// Find out how many workers need to be launched
-				workerToLaunch = (numJobs - launchedWorkers) ;
+				workerToLaunch = (numJobs - launchedCount) ;
 				workerToLaunch  = workerToLaunch  < 0 ? 0 : workerToLaunch ;
 				workerToLaunch = totalWorkers + workerToLaunch > cInfo.maxRemoteWorkers ? cInfo.maxRemoteWorkers - totalWorkers :workerToLaunch;
 				
 			}
-			System.out.println("Number of jobs to launch " + numJobs);
-			if(numJobs > 0 ) {
-				ArrayList <String> freshRequests;  
-				freshRequests = launchWorkers(numJobs);
+			System.out.println("Number of jobs to launch " + workerToLaunch);
+			if(workerToLaunch > 0 ) {
+				ArrayList <String> freshRequests;
+				
+				freshRequests = launchWorkers(workerToLaunch);
+				System.out.println("Fresh reqest size " + freshRequests.size());
 				launchedCount += freshRequests.size();
 				totalWorkers = launchedCount + activeCount;  
 				ec2RequestId.addAll(freshRequests);
 			}
 			try {
-				sleep(1000);
+				sleep(1000*2);
 				tCount++;
 			} catch (InterruptedException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
-			getInstanceHealthInfo();
-			// Cancel the request when instance is started i.e. Open
-			if (tCount % 60 == 0 )
+			
+			
+			if (tCount % 1 == 0 ){
+				// Cancel the request when instance is started i.e. Open
 				monitorAndCancelRequest();
+			}
+			getInstanceHealthInfo();
 			
 		} // end of while true 
 
