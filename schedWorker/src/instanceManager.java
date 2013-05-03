@@ -182,7 +182,7 @@ public class instanceManager extends Thread {
 	public void getInstanceHealthInfo(){ 
 		DescribeInstanceAttributeRequest dr = new DescribeInstanceAttributeRequest ();
 		
-		for(String instance : activeInstanceIds) {
+		for(String instance : activeInstanceIds) { 
 			System.out.println("Getting health for instance = " + instance);
 			dr.setInstanceId(instance);
 			

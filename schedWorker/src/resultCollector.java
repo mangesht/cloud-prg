@@ -136,7 +136,9 @@ public class resultCollector extends Thread {
 
     public void processCompletedRequest(String taskRequestXML) {
 	   parseCompletedRequestLocal(taskRequestXML);
-	   parseCompletedRequestRemote(taskRequestXML);
+	   if (cInfo.remoteWorker == true) {
+		   parseCompletedRequestRemote(taskRequestXML);
+	   }
 	   
     }
 	  

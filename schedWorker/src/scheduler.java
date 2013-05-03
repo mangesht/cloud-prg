@@ -24,8 +24,9 @@ public class scheduler {
 	}
 
 	public static void SQSInit(){
-		 //  AWSCredentialsProvider awsCredentialsProvider = new ()
-		   cInfo.sqs = new AmazonSQSClient(new ClasspathPropertiesFileCredentialsProvider());
+		   //AWSCredentialsProvider awsCredentialsProvider = new ()
+		   cInfo.sqs = new AmazonSQSClient(new 
+				   ClasspathPropertiesFileCredentialsProvider());
 
 		   cInfo.taskQueueUrl  = "https://sqs.us-east-1.amazonaws.com/571769354000/schedToWorker";
 		   cInfo.resultQueueUrl = "https://sqs.us-east-1.amazonaws.com/571769354000/workerToSched";
@@ -120,7 +121,10 @@ public class scheduler {
 			System.out.println("Error in arguments");			
 			return;
 		}
-		SQSInit();
+		
+		if (cInfo.remoteWorker == true) {		
+			SQSInit();
+		} 
 		initialiseQueues();
 		
 		bindDatagramSocket() ;
@@ -128,7 +132,7 @@ public class scheduler {
 		/* Start Result Collector Thread */
 		resultCollector resCollector = new resultCollector();
 		resCollector.cInfo = cInfo; 
-		//resCollector.start();
+		resCollector.start();
 		
 		/* Start Worker Threads */
 		/* Moved worker to cinfo, as i need to have
@@ -150,14 +154,11 @@ public class scheduler {
 		server.cInfo= cInfo;  
 		server.start();
 		
-		/*Start scheduler client interface */
-		p4scheduler clientIntf = new p4scheduler();
-		clientIntf.cInfo = cInfo;
-		clientIntf.start(); 
-		
-		/* Start scheduler */ 
-		instanceManager sched = new instanceManager();  
-		sched.cInfo = cInfo; 
-		sched.start();
+		if (cInfo.remoteWorker == true) {
+			/* Start instance manager */ 
+			instanceManager sched = new instanceManager();  
+			sched.cInfo = cInfo; 
+			sched.start();
+		}
 	}
 }
