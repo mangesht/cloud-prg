@@ -244,8 +244,8 @@ public class taskReceiver extends Thread {
 			do {
 			bRet = receiveTCPRequestXML();
 			if (bRet == true) break;
-			retryCount--;
-			millisleep(500);
+				retryCount--;
+				millisleep(500);
 			} while (retryCount > 0);
 			if (bRet == true) {
 				processRequest(taskRequestXML);

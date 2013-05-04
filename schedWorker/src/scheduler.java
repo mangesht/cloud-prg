@@ -116,7 +116,7 @@ public class scheduler {
 			System.out.println("remoteWorker =  " + cInfo.remoteWorker +
 						       "localworkers = " + cInfo.localWorkers);
 		}
-	
+		System.out.println("Scheduler mode " + cInfo.schedMode);
 		return true;
     }
     
