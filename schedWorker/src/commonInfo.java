@@ -30,9 +30,9 @@ public class commonInfo {
 	public int schedMode; 
 		
 	commonInfo () {
-		remoteWorker = false;
-		localWorkers = 32;
-		serverPort = 9876;
+		remoteWorker = true;
+		localWorkers = 0;
+		serverPort = 9100;
 		maxRemoteWorkers = 32 ; 
 		schedMode = 1; //0 - Normal schedule for controlling remote instance
 					  //1  - Disabled for manual instances to do the job

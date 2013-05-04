@@ -154,15 +154,22 @@ public class resultCollector extends Thread {
     }
 
     public void processCompletedRequest(String taskRequestXML) {
+    	   parseCompletedRequestLocal(taskRequestXML);
+    	   
+    /*	   Since we do not separate functions to process the responses from 
+     * local and remote workers 
+     * 
 	   if (cInfo.remoteWorker == true) {
 		   parseCompletedRequestRemote(taskRequestXML);
 	   } else {
 		   parseCompletedRequestLocal(taskRequestXML);
 	   }
+	   */ 
 	   
     }
 
     public void sendTCPResponseXML(String res) {
+    	    System.out.println("Sending response " + res );
         try {
         	OutputStream outSockStream = null;
         	if (cInfo.acceptSocket == null) {
@@ -178,7 +185,7 @@ public class resultCollector extends Thread {
         	}
         } catch (Exception error) {
   		  System.err.println("Result Collector : " + 
-  				"Error in socket communication " + error.getMessage());
+  				"TCP Error in socket communication " + error.getMessage());
   	   }          
      }
     
@@ -191,7 +198,7 @@ public class resultCollector extends Thread {
 	   cInfo.serverSocket.send(sendPacket);
        } catch (Exception error) {
  		  System.err.println("Result COllector : " + 
- 				"Error in socket communication " + error.getMessage() + "\n Ip:port = "+ cInfo.IPAddress +":" + cInfo.port);
+ 				"UDP Error in socket communication " + error.getMessage() + "\n Ip:port = "+ cInfo.IPAddress +":" + cInfo.port);
  	   }          
     }
     

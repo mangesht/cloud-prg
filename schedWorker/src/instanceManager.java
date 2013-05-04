@@ -1,6 +1,7 @@
 
 
 
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -269,9 +270,13 @@ public class instanceManager extends Thread {
 	}
 	public void initilizeAmazonEC2() {
 		
+		Region usEast1 ;
 		ec2 = new AmazonEC2Client(new ClasspathPropertiesFileCredentialsProvider());
-		Region usEast1 = Region.getRegion(Regions.US_EAST_1);
+			
+		usEast1 = Region.getRegion(Regions.US_EAST_1);
+		
 		ec2.setRegion(usEast1);
+		
 		
 	}
 	public void run(){
