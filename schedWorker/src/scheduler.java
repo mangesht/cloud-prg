@@ -57,7 +57,7 @@ public class scheduler {
 				 if(str.charAt(1) == 'h'){
 					 //help
 					 displayHelp();
-
+					 return false;
 				 }else if(str.charAt(1) == 's'){
 					 // Server Port where client send tasks 
 					 cInfo.serverPort  = Integer.parseInt(args[idx+1]) ;                                                 
@@ -68,6 +68,10 @@ public class scheduler {
 					 idx++;
 				 }else if(str.charAt(1) == 'r'){
 					 cInfo.remoteWorker = true; 
+				 }else if(str.charAt(1) == 'm'){
+					 // Mode of operation for scheduler 
+					 cInfo.schedMode = Integer.parseInt(args[idx+1]) ;                                                 
+					 idx++;
 				 }
 				 idx++;
 			 }
@@ -118,7 +122,7 @@ public class scheduler {
 		bRet = parseArgs(args);
 		
 		if (bRet == false) {
-			System.out.println("Error in arguments");			
+					
 			return;
 		}
 		
