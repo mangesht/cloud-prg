@@ -20,6 +20,7 @@ import com.amazonaws.AmazonClientException;
 import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.auth.ClasspathPropertiesFileCredentialsProvider;
 import com.amazonaws.services.sqs.AmazonSQSClient;
+import com.amazonaws.services.sqs.model.DeleteMessageRequest;
 import com.amazonaws.services.sqs.model.Message;
 import com.amazonaws.services.sqs.model.ReceiveMessageRequest;
 import com.amazonaws.services.sqs.model.SendMessageRequest;
@@ -158,6 +159,11 @@ public class remoteWorker {
 				response = "<response><task><taskid>" + txtTaskId.getData() + "</taskid><taskstr>" + txtTaskStr.getData() + "</taskstr><taskresult>1</taskresult></task></response>";
 				System.out.println(" "  +response);
 				remoteSend(response);
+				
+	            // Delete the processed message message
+	            System.out.println("Deleting a message.\n");
+	            String messageRecieptHandle = messages.get(0).getReceiptHandle();
+	            cInfo.sqs.deleteMessage(new DeleteMessageRequest(cInfo.taskQueueUrl, messageRecieptHandle));
 			}
 		}
 	}
