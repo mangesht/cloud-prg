@@ -9,6 +9,9 @@ public class p4client {
 	static String serverIpAddress=null; 
 	static String serverPort=null;
 	static DatagramSocket clientSocket=null;
+	static Socket clientTCPSocket=null;
+	static InputStream inputSockStream;
+	static OutputStream outputSockStream;
 	static int taskRecievedCount=0;
 	static int taskSentCount=0;
 	
@@ -42,7 +45,7 @@ public class p4client {
 		  clientSocket.receive(receivePacket);
 		  String taskresponse = new String(receivePacket.getData());
 		  taskresponse = taskresponse.trim();
-		  System.out.println("FROM SERVER:{" + taskresponse + "}");
+		  //System.out.println("FROM SERVER:{" + taskresponse + "}");
 		  taskRecievedCount += printResponse(taskresponse);
 		  if (taskRecievedCount == taskSentCount) {
 			  break;
@@ -55,6 +58,102 @@ public class p4client {
 		
 	    clientSocket.close();
 
+	}
+
+	public static void receiveTCPResponseFromScheduler() {
+
+		if (xmlRequest == null) {
+			System.err.println("no task request, returning");
+			return;
+		}
+		
+		if (serverIpAddress == null) {
+			System.err.println("serverIpAddress is null");
+			return;			
+		}
+
+		if (serverPort == null) {
+			System.err.println("serverIpAddress is null");
+			return;			
+		}
+		
+		if ((clientTCPSocket == null) && (clientSocket == null)) {
+			System.err.println("request not yet sent to scheduler");
+			return;					
+		}
+		System.out.println("Waiting for response from server");
+		while(true) {
+	    try {	
+	      String taskresponse = "";	
+	      int availLen;
+	      int readLen;
+	      int pos = 0;
+	      byte b[] = new byte[1024];
+	      int c = 1024;
+		  boolean continueReading = true;
+		  boolean readStarted = false;
+		  c = 1024;
+		  while (c > 0) {
+			  c--;
+			  b[c] = 0;
+		  }
+		  
+		  while (continueReading) {
+		      boolean endOfBuffer;
+		      
+		      endOfBuffer = false;
+		      
+			  availLen = inputSockStream.available();
+			  if (availLen == 0) {
+				  if (readStarted == true) {
+					  continueReading = false;
+					  continue;
+				  }
+			  }
+			  
+			  if (pos + availLen > 1024) {
+				  readLen = 1024 - availLen;
+				  endOfBuffer = true;
+			  } else {
+				  readLen = availLen;
+			  }
+			  
+			  inputSockStream.read(b, pos, readLen);
+
+
+			  if (endOfBuffer == true) {
+				  pos = 0;
+				  c = 1024;
+				  while (c > 0) {
+					  c--;
+					  b[c] = 0;
+				  }
+			  } else {
+
+				  c = -1;
+				  while (c < 1024) {
+					  c++;
+					  if (b[c] == 0) break;
+					  readStarted = true;
+					  taskresponse += (char) b[c];
+					  //System.out.print((char) b[c]);
+				  }
+				  pos += readLen;
+			  }
+			  
+		  }
+		  taskresponse = taskresponse.trim();
+		  //System.out.print(taskresponse);
+		  taskRecievedCount += printResponse(taskresponse);
+		  if (taskRecievedCount == taskSentCount) {
+			  clientTCPSocket.close();
+			  break;
+		  }
+	    }
+	    catch (Exception error){
+		  System.err.println("Error in socket communication " + error.getMessage());
+	    }
+		}
 	}
 	
 	public static void sendRequestToScheduler() {
@@ -80,12 +179,42 @@ public class p4client {
 		  DatagramPacket sendPacket = new DatagramPacket(sendData,
 				  		sendData.length, IPAddress, Integer.valueOf(serverPort));
 		  clientSocket.send(sendPacket);
-		  System.out.println("SENTXMLFILE=" + xmlRequest);
+		  //System.out.println("SENTXMLFILE=" + xmlRequest);
 	    }
 	    catch (Exception error){
 		  System.err.println("Error in socket communication " + error.getMessage());
 	    }
 	}
+	
+	public static void sendTCPRequestToScheduler() {
+		if (xmlRequest == null) {
+			System.err.println("no task request, returning");
+			return;
+		}
+		
+		if (serverIpAddress == null) {
+			System.err.println("serverIpAddress is null");
+			return;			
+		}
+
+		if (serverPort == null) {
+			System.err.println("serverIpAddress is null");
+			return;			
+		}
+  	    try {	
+  	      clientTCPSocket = new Socket(serverIpAddress, 
+				  				Integer.valueOf(serverPort));
+		  
+		  inputSockStream = clientTCPSocket.getInputStream();
+		  outputSockStream = clientTCPSocket.getOutputStream();
+		  
+		  outputSockStream.write(xmlRequest.getBytes());
+		  //System.out.println("SENTXMLFILE=" + xmlRequest);
+	    }
+	    catch (Exception error){
+		  System.err.println("Error in socket communication " + error.getMessage());
+	    }
+	}	
 	
 	public static int printResponse(String xmlResponse)
 	{
@@ -155,10 +284,10 @@ public class p4client {
 				while (taskStr != null) {
 					if (taskStr.equals("==batchStart==")) {
 						batchJob="true" ;
-						System.out.print("batchjobstart:noSplit = true; ");
+						System.out.println("batchjobstart:noSplit = true; ");
 					}
 					else if (taskStr.equals("==batchEnd==")) {
-						System.out.print("batchjobend: ");
+						System.out.println("batchjobend: ");
 						taskStr = breader.readLine();
 						break;
 					} else {
@@ -245,8 +374,8 @@ public class p4client {
 		
 		serverIpAddress = 	serverAddress.substring(0, (serverAddress.indexOf(':')));
 		serverPort = 	serverAddress.substring((serverAddress.indexOf(':') + 1));
-		System.out.println("serverIpAddress = " + serverIpAddress);
-		System.out.println("serverPort = " + serverPort);
+		//System.out.println("serverIpAddress = " + serverIpAddress);
+		//System.out.println("serverPort = " + serverPort);
 		return true;
 	
 	}
@@ -258,9 +387,9 @@ public class p4client {
 		
 		generateRequestXMLFile();
 		
-		sendRequestToScheduler();
+		sendTCPRequestToScheduler();
 		
-		receiveResponseFromScheduler();
+		receiveTCPResponseFromScheduler();
 
 
 	}

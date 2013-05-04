@@ -38,9 +38,22 @@ public class scheduler {
 				   				
 			System.out.println("Bind to datagram socket at port " + cInfo.serverPort);		   
 	   } catch (Exception error) {
-			  System.err.println("Error in socket communication " + error.getMessage());
+			System.err.println("Error in socket communication " + error.getMessage());
+			cInfo.serverSocket.close();
 	   }
     }
+    
+    public static  void bindTCPSocket() {
+	   try {
+		   cInfo.serverTCPSocket = new tcpServerSocket(cInfo.serverPort);
+		   cInfo.serverTCPSocket.start();		   				
+			System.out.println("Bind to TCP socket at port " + cInfo.serverPort);		   
+	   } catch (Exception error) {
+			System.err.println("Error in socket communication " + error.getMessage());
+			cInfo.serverSocket.close();
+	   }
+    }
+    
 
     public static boolean parseArgs(String[] args) {
 		String str;    	
@@ -101,7 +114,7 @@ public class scheduler {
 		}
 		else {
 			System.out.println("remoteWorker =  " + cInfo.remoteWorker +
-						       " localworkers = " + cInfo.localWorkers);
+						       "localworkers = " + cInfo.localWorkers);
 		}
 	
 		return true;
@@ -131,7 +144,7 @@ public class scheduler {
 		} 
 		initialiseQueues();
 		
-		bindDatagramSocket() ;
+		bindTCPSocket() ;
  
 		/* Start Result Collector Thread */
 		resultCollector resCollector = new resultCollector();

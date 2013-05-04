@@ -30,7 +30,7 @@ public class taskReceiver extends Thread {
         System.out.println("Error Message: " + ace.getMessage());
        }
 
-	}	
+	}
 		
    public boolean isLocalWorkerAvailable() {
 	   
@@ -115,9 +115,10 @@ public class taskReceiver extends Thread {
 	   	
 	public void processRequest(String xmlRequest)
 	{
-	   xmlRequest = xmlRequest.trim();
-	   System.out.println(xmlRequest);
+
 		try {
+ 		    xmlRequest = xmlRequest.trim();
+		    System.out.println(xmlRequest);			
 			DocumentBuilderFactory fact1 = DocumentBuilderFactory.newInstance();
 			fact1.setValidating(false);
 			fact1.setIgnoringElementContentWhitespace(true);
@@ -184,22 +185,71 @@ public class taskReceiver extends Thread {
 		  } catch (Exception error) {
 			  System.err.println("Task Receiver : " +
 					  "Error in socket communication " + error.getMessage());
+			  cInfo.serverSocket.close();
 			  return false;
 		  }
 	   }
-	   
+   
+   public boolean receiveTCPRequestXML() {
+		  Socket acceptSocket;
+		  
+		  try {
+			  acceptSocket = cInfo.serverTCPSocket.retrieveAcceptSocket();
+			  if (acceptSocket == null) return false;
+			  cInfo.acceptSocket = acceptSocket;
+			  taskRequestXML = cInfo.serverTCPSocket.readString(cInfo.acceptSocket);
+			  taskRequestXML = taskRequestXML.trim();
+			  
+			  return true;
+		      
+		  } catch (Exception error) {
+			  System.err.println("Task Receiver : " +
+					  "Error in socket communication " + error.getMessage());
+			  cInfo.serverSocket.close();
+			  return false;
+		  }
+	   }
+
+	private void millisleep(int n) {
+		try
+		   {
+		   // Sleep at least n milliseconds.
+		   // 1 millisecond = 1/1000 of a second.
+		   Thread.sleep( n );
+		   }
+		catch ( InterruptedException e )
+		   {
+		   System.out.println( "awakened prematurely" );
+	
+		   // If you want to simulate the interrupt happening
+		   // just after awakening, use the following line
+		   // so that our NEXT sleep or wait
+		   // will be interrupted immediately.
+		   // Thread.currentThread().interrupt();
+		   // Or have have same other thread awaken us:
+		   // Thread us;
+		   // ...
+		   // us = Thread.currentThread();
+		   // ...
+		   // us.interrupt();
+		   }
+	} 
+	
 	public void run(){
 		boolean bRet;
 		int retryCount;
-		
+		System.out.println("taskReceiver running .. ");
 		while (true){
-			retryCount = 10;
+			retryCount = 1;
 			do {
-			bRet = receiveRequestXML();
+			bRet = receiveTCPRequestXML();
 			if (bRet == true) break;
 			retryCount--;
+			millisleep(500);
 			} while (retryCount > 0);
-			processRequest(taskRequestXML);
+			if (bRet == true) {
+				processRequest(taskRequestXML);
+			}
 		}
 		
 	}

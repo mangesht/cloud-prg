@@ -1,5 +1,6 @@
 import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;
+import java.io.OutputStream;
 import java.net.*;
 import java.util.ArrayList;
 import java.util.List;
@@ -88,7 +89,6 @@ public class resultCollector extends Thread {
     
    public void parseCompletedRequestLocal(String xmlResponse)   {
 	   xmlResponse = xmlResponse.trim();
-	   //xmlResponse = xmlResponse.substring(0, (xmlResponse.lastIndexOf('>') + 1));
 		try {
 			DocumentBuilderFactory fact1 = DocumentBuilderFactory.newInstance();
 			fact1.setValidating(false);
@@ -154,19 +154,38 @@ public class resultCollector extends Thread {
     }
 
     public void processCompletedRequest(String taskRequestXML) {
-	   parseCompletedRequestLocal(taskRequestXML);
-	   /*
 	   if (cInfo.remoteWorker == true) {
 		   parseCompletedRequestRemote(taskRequestXML);
+	   } else {
+		   parseCompletedRequestLocal(taskRequestXML);
 	   }
-	   */
 	   
     }
-	  
+
+    public void sendTCPResponseXML(String res) {
+        try {
+        	OutputStream outSockStream = null;
+        	if (cInfo.acceptSocket == null) {
+        		System.err.println("Accept Socket is NULL");
+        	}
+        	else {
+        		outSockStream = cInfo.acceptSocket.getOutputStream();
+	        	if (outSockStream == null) {
+	        		System.err.println("Output stream null in the accept socket");
+	        	} else  {
+	        		outSockStream.write(res.getBytes());
+	        	}
+        	}
+        } catch (Exception error) {
+  		  System.err.println("Result Collector : " + 
+  				"Error in socket communication " + error.getMessage());
+  	   }          
+     }
+    
     public void sendResponseXML(String res) {
        byte[] sendData = new byte[1024];
-       sendData = res.getBytes();
        try {
+	   sendData = res.getBytes();
 	   sendPacket = new DatagramPacket(sendData, sendData.length, 
 			   					cInfo.IPAddress, cInfo.port);
 	   cInfo.serverSocket.send(sendPacket);
@@ -177,10 +196,37 @@ public class resultCollector extends Thread {
     }
     
     public void cleanupCompletedRequest() {
-        String messageRecieptHandle = messages.get(0).getReceiptHandle();
-        cInfo.sqs.deleteMessage(new DeleteMessageRequest(cInfo.resultQueueUrl , messageRecieptHandle));
+    	if (cInfo.remoteWorker == true) {
+    		String messageRecieptHandle = messages.get(0).getReceiptHandle();
+    		cInfo.sqs.deleteMessage(new DeleteMessageRequest(cInfo.resultQueueUrl , messageRecieptHandle));
+    	}
     }
     
+	private void millisleep(int n) {
+		try
+		   {
+		   // Sleep at least n milliseconds.
+		   // 1 millisecond = 1/1000 of a second.
+		   Thread.sleep( n );
+		   }
+		catch ( InterruptedException e )
+		   {
+		   System.out.println( "awakened prematurely" );
+	
+		   // If you want to simulate the interrupt happening
+		   // just after awakening, use the following line
+		   // so that our NEXT sleep or wait
+		   // will be interrupted immediately.
+		   // Thread.currentThread().interrupt();
+		   // Or have have same other thread awaken us:
+		   // Thread us;
+		   // ...
+		   // us = Thread.currentThread();
+		   // ...
+		   // us.interrupt();
+		   }
+	}  
+	
 	public void run(){
 		String res=""; 
 		
@@ -190,9 +236,11 @@ public class resultCollector extends Thread {
         	System.out.println("RC : received request = " + res );
         	processCompletedRequest(res);
         	System.out.println("RC :processCompletedRequest completed " );
-        	sendResponseXML(taskResponseXML);
+        	sendTCPResponseXML(taskResponseXML);
         	
         	cleanupCompletedRequest();
+        	
+        	millisleep(500);
         }
 	}
 }
