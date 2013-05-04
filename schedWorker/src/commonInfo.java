@@ -28,11 +28,15 @@ public class commonInfo {
 	public String resultQueueUrl;
 	public int maxRemoteWorkers;
 	public int schedMode; 
-		
+	public int maxTaskCount=2;	
 	commonInfo () {
-		remoteWorker = true;
-		localWorkers = 0;
-		serverPort = 9100;
+		/* Lets keeo remoteWorker as default false,
+		 * otherwise it will always get priority over
+		 * the command line specification of -lw.
+		 */
+		remoteWorker = false;
+		localWorkers = 32;
+		serverPort = 9876;
 		maxRemoteWorkers = 32 ; 
 		schedMode = 1; //0 - Normal schedule for controlling remote instance
 					  //1  - Disabled for manual instances to do the job

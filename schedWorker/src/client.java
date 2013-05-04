@@ -14,7 +14,7 @@ public class client {
 	static OutputStream outputSockStream;
 	static int taskRecievedCount=0;
 	static int taskSentCount=0;
-	
+	static int maxTaskCount=2;
 
 	public static void receiveResponseFromScheduler() {
 
@@ -261,6 +261,7 @@ public class client {
 	{
 		int taskid = 0;
 		int taskCount;
+		int taskidCounter;
 		String taskStr;
 		String batchJob;
 		
@@ -271,7 +272,8 @@ public class client {
 			FileReader freader = new FileReader(taskFile);
 			BufferedReader breader = new BufferedReader(freader);
 			taskStr = breader.readLine();
-			xmlRequest = "<request>";			
+			xmlRequest = "<request>";
+			taskidCounter = 0;
 			while (endOfParsing == false) {
 
 				if (taskStr == null) {
@@ -281,6 +283,7 @@ public class client {
 				batchJob = "false";
 				taskCount = 0;
 				xmltaskRequest = "";
+				taskidCounter = 0;
 				while (taskStr != null) {
 					if (taskStr.equals("==batchStart==")) {
 						batchJob="true" ;
@@ -290,7 +293,8 @@ public class client {
 						System.out.println("batchjobend: ");
 						taskStr = breader.readLine();
 						break;
-					} else {
+					} else if (taskidCounter < maxTaskCount) {
+						taskidCounter++;
 						System.out.println("taskStr = " + taskStr);
 						xmltaskRequest +="<task>";
 						taskid++;
@@ -299,7 +303,8 @@ public class client {
 						xmltaskRequest += "<taskid>" + taskid + "</taskid>";
 						xmltaskRequest += "<taskstr>" + taskStr + "</taskstr>";
 						xmltaskRequest +="</task>";
-					}
+					} 
+						
 					taskStr = breader.readLine();
 				}
 				xmlRequest += "<taskBlock batchJob=\"" + batchJob + "\" " +

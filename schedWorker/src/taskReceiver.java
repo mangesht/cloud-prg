@@ -106,9 +106,9 @@ public class taskReceiver extends Thread {
 		
 		requestXML += "</task>";	
 
-		requestTaskBlock += "<taskblock>"; 
+ 
 		requestTaskBlock += requestXML;
-		requestTaskBlock += "</taskblock>";
+
 		return requestTaskBlock;
 	}	
 
@@ -151,7 +151,14 @@ public class taskReceiver extends Thread {
 					int jLast =  jStart + Integer.valueOf(taskNodes);
 					for (int j = jStart; j < jLast; j++) {
 						taskRequestXML = "<response>";
-						taskRequestXML += processSingleTask(taskBlock, j);
+						taskRequestXML += "<taskblock>";
+						for (int k = 0; k < cInfo.maxTaskCount; k++)
+						{
+							taskRequestXML += processSingleTask(taskBlock, j);
+							j++;
+							if (j >= jLast) break;
+						}
+						taskRequestXML += "</taskblock>";
 						taskRequestXML += "</response>";
 						putrequestIntoQueue(taskRequestXML);
 					}
@@ -244,8 +251,8 @@ public class taskReceiver extends Thread {
 			do {
 			bRet = receiveTCPRequestXML();
 			if (bRet == true) break;
-				retryCount--;
-				millisleep(500);
+			retryCount--;
+			millisleep(500);
 			} while (retryCount > 0);
 			if (bRet == true) {
 				processRequest(taskRequestXML);

@@ -169,7 +169,6 @@ public class resultCollector extends Thread {
     }
 
     public void sendTCPResponseXML(String res) {
-    	    System.out.println("Sending response " + res );
         try {
         	OutputStream outSockStream = null;
         	if (cInfo.acceptSocket == null) {
