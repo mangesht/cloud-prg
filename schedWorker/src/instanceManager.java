@@ -297,7 +297,7 @@ public class instanceManager extends Thread {
 		totalWorkers = 2  ;   
 		launchedCount = 0 ;
 		*/  
-		while(true){
+		while(true && cInfo.schedMode == 0){
 			numJobs = getQueueSize();
 			if (totalWorkers < cInfo.maxRemoteWorkers && numJobs > 0 ) {
 				// Find out how many workers need to be launched

@@ -165,7 +165,7 @@ public class taskReceiver extends Thread {
 	} 
 	
    public boolean receiveRequestXML() {
-		  byte[] receiveData = new byte[1024];
+		  byte[] receiveData = new byte[11024];
 		  try {
 			  System.out.println("Server waiting for task ");
 			  receivePacket = new DatagramPacket(receiveData, 
@@ -175,8 +175,9 @@ public class taskReceiver extends Thread {
 			  cInfo.IPAddress = receivePacket.getAddress();
 			  cInfo.port = receivePacket.getPort();
 			  taskRequestXML = taskRequestXML.trim();
-			  System.out.println("RECEIVED: Length "+ 
-					  		taskRequestXML.length() + taskRequestXML);
+			  System.out.println("RECEIVED: Length "+ taskRequestXML.length() +
+					  "Rx IPaddress:Port " + cInfo.IPAddress + ":" + cInfo.port + "\n"+
+					  taskRequestXML);
 			  
 			  return true;
 		      

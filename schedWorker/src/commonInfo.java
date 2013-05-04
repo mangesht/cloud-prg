@@ -25,11 +25,15 @@ public class commonInfo {
 	public String taskQueueUrl  ; 
 	public String resultQueueUrl;
 	public int maxRemoteWorkers;
+	public int schedMode; 
 		
 	commonInfo () {
 		remoteWorker = true;
 		localWorkers = 0;
-		serverPort = 9876;
-		maxRemoteWorkers = 32 ; 
+		serverPort = 9100;
+		maxRemoteWorkers = 32 ;
+		schedMode = 1; //0 - Normal schedule for controlling remote instance
+					  //1  - Disabled for manual instances to do the job
+					  // 2 Control given to cloudWatch
 	}
 }

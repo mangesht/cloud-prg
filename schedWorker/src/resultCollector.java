@@ -1,6 +1,7 @@
 import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;
 import java.net.*;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map.Entry;
 
@@ -24,30 +25,40 @@ public class resultCollector extends Thread {
 	DatagramPacket receivePacket;
 	DatagramPacket sendPacket;
 	List<Message> messages = null ;
-	
-    public void receiveCompletedRequestLocal(String xmlCompletedRequest) {
+	resultCollector(){
+		messages = new ArrayList<Message>(); 
+	}
+    public String receiveCompletedRequestLocal() {
 		try {
-			xmlCompletedRequest = cInfo.resultQ.take();
+			return  cInfo.resultQ.take();
 		} catch (InterruptedException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
+		return null;
     }
     
-    public void receiveCompletedRequestRemote(String xmlCompletedRequest) {
+    public String receiveCompletedRequestRemote() {
 		ReceiveMessageRequest receiveMessageRequest = new ReceiveMessageRequest(cInfo.resultQueueUrl);
 		receiveMessageRequest .setMaxNumberOfMessages(1);
-	
+		String str = new String(); 
+		messages.clear();
 		while(true) { 
-			try { 
+			
+				System.out.println("Waiting for result from remote");
 				messages = cInfo.sqs.receiveMessage(receiveMessageRequest).getMessages();
+				System.out.println("Done Waiting for result from remote");
+				
+			try {	
 			}catch (AmazonServiceException e ) { 
 				System.out.println("Result Collector Rx Message" +  e.getMessage());
 			}
+			
 			if (messages != null  ) {
 				System.out.println("Result Queue Size " + messages.size());
-				if (messages.size() > 0 ) 
-					break;
+				if (messages.size() > 0 ) { 
+						break;
+				}
 			}
 			
 			{
@@ -59,18 +70,25 @@ public class resultCollector extends Thread {
 				}
 			}
 		}
+		for(Message m : messages ) {
+			System.out.println("Message body " + m.getBody());
+			str = str.concat(m.getBody()); 
+		}
+		return str;
+		
     }
 	
-    public void receiveCompletedRequest(String xmlCompletedRequest) {
+    public String  receiveCompletedRequest() {
 		if(cInfo.remoteWorker == false ){
-			receiveCompletedRequestLocal(xmlCompletedRequest);
+			return receiveCompletedRequestLocal();
     	} else {
-    		receiveCompletedRequestRemote(xmlCompletedRequest);
+    		return receiveCompletedRequestRemote();
 	   }	
     }
     
    public void parseCompletedRequestLocal(String xmlResponse)   {
-	   xmlResponse = xmlResponse.substring(0, (xmlResponse.lastIndexOf('>') + 1));
+	   xmlResponse = xmlResponse.trim();
+	   //xmlResponse = xmlResponse.substring(0, (xmlResponse.lastIndexOf('>') + 1));
 		try {
 			DocumentBuilderFactory fact1 = DocumentBuilderFactory.newInstance();
 			fact1.setValidating(false);
@@ -83,6 +101,7 @@ public class resultCollector extends Thread {
 			Element requestElement =  requestDoc.getDocumentElement();
 			NodeList taskBlockNode = requestElement.getChildNodes();
 			taskResponseXML = "<response>";
+			System.out.println("Response Rx = " + xmlResponse + "\n block Length = " + taskBlockNode.getLength());
 			
 			for (int i = 0; i < taskBlockNode.getLength(); i++) {
 				Element taskBlock  = (Element) taskBlockNode.item(i);
@@ -112,7 +131,7 @@ public class resultCollector extends Thread {
 			
 		}
 		catch (Exception error) {
-			System.err.println("Error parsing : " + error.getMessage());
+			System.err.println("ResultCollector Error parsing : " + error.getMessage());
 		}		
 	}  
    
@@ -136,22 +155,24 @@ public class resultCollector extends Thread {
 
     public void processCompletedRequest(String taskRequestXML) {
 	   parseCompletedRequestLocal(taskRequestXML);
+	   /*
 	   if (cInfo.remoteWorker == true) {
 		   parseCompletedRequestRemote(taskRequestXML);
 	   }
+	   */
 	   
     }
 	  
     public void sendResponseXML(String res) {
        byte[] sendData = new byte[1024];
+       sendData = res.getBytes();
        try {
-	   sendData = res.getBytes();
 	   sendPacket = new DatagramPacket(sendData, sendData.length, 
 			   					cInfo.IPAddress, cInfo.port);
 	   cInfo.serverSocket.send(sendPacket);
        } catch (Exception error) {
  		  System.err.println("Result COllector : " + 
- 				"Error in socket communication " + error.getMessage());
+ 				"Error in socket communication " + error.getMessage() + "\n Ip:port = "+ cInfo.IPAddress +":" + cInfo.port);
  	   }          
     }
     
@@ -165,10 +186,10 @@ public class resultCollector extends Thread {
 		
         while(true)
         {
-        	receiveCompletedRequest(res);	
-        	
+        	res = receiveCompletedRequest();	
+        	System.out.println("RC : received request = " + res );
         	processCompletedRequest(res);
-        	
+        	System.out.println("RC :processCompletedRequest completed " );
         	sendResponseXML(taskResponseXML);
         	
         	cleanupCompletedRequest();
