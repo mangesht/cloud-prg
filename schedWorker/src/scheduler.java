@@ -97,7 +97,7 @@ public class scheduler {
 		}
 		else {
 			System.out.println("remoteWorker =  " + cInfo.remoteWorker +
-						       "localworkers = " + cInfo.localWorkers);
+						       " localworkers = " + cInfo.localWorkers);
 		}
 	
 		return true;

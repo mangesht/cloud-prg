@@ -12,10 +12,7 @@ public class p4client {
 	static int taskRecievedCount=0;
 	static int taskSentCount=0;
 	
-	public static void displayHelp() {
-		// -f fileName -u url [-n numThreads] -c command
-	}
-	
+
 	public static void receiveResponseFromScheduler() {
 
 		if (xmlRequest == null) {
@@ -200,8 +197,14 @@ public class p4client {
 			return;
 		}
 	}
+	public static void displayHelp() {
+		// -f fileName -u url [-n numThreads] -c command
+		System.out.println("");
+		System.out.println("Usage p4client [-h] -s serverIp:port -w workloadFile");
+		
+	}
 	
-	public static void parseArgs(String [] args) 
+	public static boolean parseArgs(String [] args) 
 	{
 		String str;
 		int idx=0;
@@ -216,7 +219,7 @@ public class p4client {
             	 if(str.charAt(1) == 'h'){
                      //help
                      displayHelp();
-                     return ; 
+                     return false; 
                  }else if(str.charAt(1) == 's'){
                      // Number of Threads this program uses
                 	 serverAddress = args[idx+1] ;
@@ -232,23 +235,26 @@ public class p4client {
 
 		if (taskFile == null) {
 			System.err.println("no task request, returning");
-			return;
+			return false;
 		}
 		
 		if (serverAddress == null) {
 			System.err.println("no scheduler address, returning");
-			return;
+			return false;
 		}
 		
 		serverIpAddress = 	serverAddress.substring(0, (serverAddress.indexOf(':')));
 		serverPort = 	serverAddress.substring((serverAddress.indexOf(':') + 1));
 		System.out.println("serverIpAddress = " + serverIpAddress);
 		System.out.println("serverPort = " + serverPort);
+		return true;
 	
 	}
 	
 	public static void main(String[] args) {
-		parseArgs(args);
+		if(parseArgs(args) == false) {
+			return;
+		}
 		
 		generateRequestXMLFile();
 		

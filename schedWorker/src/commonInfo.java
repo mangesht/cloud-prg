@@ -27,8 +27,8 @@ public class commonInfo {
 	public int maxRemoteWorkers;
 		
 	commonInfo () {
-		remoteWorker = false;
-		localWorkers = 32;
+		remoteWorker = true;
+		localWorkers = 0;
 		serverPort = 9876;
 		maxRemoteWorkers = 32 ; 
 	}

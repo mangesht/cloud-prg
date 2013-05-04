@@ -30,7 +30,7 @@ public class taskReceiver extends Thread {
         System.out.println("Error Message: " + ace.getMessage());
        }
 
-	}
+	}	
 		
    public boolean isLocalWorkerAvailable() {
 	   
