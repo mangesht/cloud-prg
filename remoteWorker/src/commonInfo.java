@@ -24,7 +24,7 @@ public class commonInfo {
 		remoteWorker = true;
 		localWorkers = 0;
 		serverPort = 9100;
-		timeout = 100 ;
+		timeout = 5 ;
 		die = false;
 	}
 }
