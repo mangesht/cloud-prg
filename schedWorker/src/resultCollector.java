@@ -22,27 +22,39 @@ import com.amazonaws.services.sqs.model.ReceiveMessageRequest;
 public class resultCollector extends Thread {
 	public commonInfo cInfo; 
 	
-	String taskResponseXML; 	
+	//String taskResponseXML; 	
 	DatagramPacket receivePacket;
 	DatagramPacket sendPacket;
 	List<Message> messages = null ;
 	resultCollector(){
 		messages = new ArrayList<Message>(); 
 	}
-    public String receiveCompletedRequestLocal() {
+    public List<String> receiveCompletedRequestLocal() {
+    	int sz  = 0 ;
+    	int i;
+    	List<String> strs = new ArrayList<String>();
 		try {
-			return  cInfo.resultQ.take();
+			sz = cInfo.resultQ.size();
+			if(sz > 0 ) { 
+				for(i=0;i<sz;i++){ 
+					strs.add(cInfo.resultQ.take()); 
+				}
+			}else {
+				strs.add(cInfo.resultQ.take());
+			}
+			//return  cInfo.resultQ.take();
 		} catch (InterruptedException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		return null;
+		return strs;  
+		
     }
     
-    public String receiveCompletedRequestRemote() {
+    public List<String> receiveCompletedRequestRemote() {
 		ReceiveMessageRequest receiveMessageRequest = new ReceiveMessageRequest(cInfo.resultQueueUrl);
-		receiveMessageRequest .setMaxNumberOfMessages(1);
-		String str = new String(); 
+		receiveMessageRequest .setMaxNumberOfMessages(10);
+		List<String> strs = new ArrayList<String>(); 
 		messages.clear();
 		while(true) { 
 			
@@ -73,13 +85,13 @@ public class resultCollector extends Thread {
 		}
 		for(Message m : messages ) {
 			System.out.println("Message body " + m.getBody());
-			str = str.concat(m.getBody()); 
+			strs.add(m.getBody()) ;// = str.concat(m.getBody()); 
 		}
-		return str;
+		return strs;
 		
     }
 	
-    public String  receiveCompletedRequest() {
+    public List<String>  receiveCompletedRequest() {
 		if(cInfo.remoteWorker == false ){
 			return receiveCompletedRequestLocal();
     	} else {
@@ -87,8 +99,10 @@ public class resultCollector extends Thread {
 	   }	
     }
     
-   public void parseCompletedRequestLocal(String xmlResponse)   {
+   public String  parseCompletedRequestLocal(String xmlResponse)   {
+	   String taskResponseXML = null ; 
 	   xmlResponse = xmlResponse.trim();
+	   
 		try {
 			DocumentBuilderFactory fact1 = DocumentBuilderFactory.newInstance();
 			fact1.setValidating(false);
@@ -132,7 +146,8 @@ public class resultCollector extends Thread {
 		}
 		catch (Exception error) {
 			System.err.println("ResultCollector Error parsing : " + error.getMessage());
-		}		
+		}	
+		return taskResponseXML; 
 	}  
    
     public void parseCompletedRequestRemote(String xmlResponse)   {
@@ -153,8 +168,8 @@ public class resultCollector extends Thread {
 	   }
     }
 
-    public void processCompletedRequest(String taskRequestXML) {
-    	   parseCompletedRequestLocal(taskRequestXML);
+    public String  processCompletedRequest(String taskRequestXML) {
+    	   return parseCompletedRequestLocal(taskRequestXML);
     	   
     /*	   Since we do not separate functions to process the responses from 
      * local and remote workers 
@@ -234,15 +249,19 @@ public class resultCollector extends Thread {
 	}  
 	
 	public void run(){
-		String res=""; 
-		
+		List<String> resposes = new ArrayList<String>(); 
+		String processedResponseXML; 
         while(true)
         {
-        	res = receiveCompletedRequest();	
-        	System.out.println("RC : received request = " + res );
-        	processCompletedRequest(res);
-        	System.out.println("RC :processCompletedRequest completed " );
-        	sendTCPResponseXML(taskResponseXML);
+        	resposes = receiveCompletedRequest();	
+        	for (String response : resposes) {
+        		System.out.println("RC : received request = " + response);
+        		processedResponseXML = processCompletedRequest(response);
+        		System.out.println("RC :processCompletedRequest completed " );
+           	 	sendTCPResponseXML(processedResponseXML );
+        		
+        	}
+        	   	
         	
         	cleanupCompletedRequest();
         	
