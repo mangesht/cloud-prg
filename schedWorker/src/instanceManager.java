@@ -139,6 +139,7 @@ public class instanceManager extends Thread {
 	        System.out.print("Request Ids ");
 	        for(String e :ec2RequestId) { 
 	        	System.out.print( " " + e); 
+	        	
 	        }
 	        System.out.println();
 	        // Initialize the anyOpen variable to false ??? which assumes there are no requests open unless
