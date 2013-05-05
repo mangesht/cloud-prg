@@ -1,5 +1,4 @@
 import java.net.*;
-import java.net.InetAddress;
 import java.util.concurrent.BlockingQueue;
 
 import com.amazonaws.services.sqs.AmazonSQS;
@@ -28,17 +27,21 @@ public class commonInfo {
 	public String resultQueueUrl;
 	public int maxRemoteWorkers;
 	public int schedMode; 
-	public int maxTaskCount=2;	
+	public int maxTaskCount=1;
+	public String myAMIID;
+	public Double spotInstancePrice; 
 	commonInfo () {
 		/* Lets keeo remoteWorker as default false,
 		 * otherwise it will always get priority over
 		 * the command line specification of -lw.
 		 */
-		remoteWorker = false;
-		localWorkers = 32;
-		serverPort = 9876;
+		myAMIID = "ami-79ddb010";
+		spotInstancePrice = 0.007;
+		remoteWorker = true;
+		localWorkers = 0;
+		serverPort = 9100;
 		maxRemoteWorkers = 32 ; 
-		schedMode = 1; //0 - Normal schedule for controlling remote instance
+		schedMode = 0; //0 - Normal schedule for controlling remote instance
 					  //1  - Disabled for manual instances to do the job
 					  // 2 Control given to cloudWatch
 	}

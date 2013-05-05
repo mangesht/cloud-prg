@@ -46,8 +46,8 @@ public class taskReceiver extends Thread {
 		  try {	   
 			  if (cInfo.remoteWorker == true) {
 				  /* put into remote task queue SQS ? */
-				  /*System.out.println("Adding to remote worker queue :\n{" 
-							+ requestXML + "}");*/
+				  System.out.println("Adding to remote worker queue :\n{" 
+							+ requestXML + "}");
 				  remoteSend(requestXML);							 
 				  
 			  } else if (isLocalWorkerAvailable()) {
@@ -149,7 +149,7 @@ public class taskReceiver extends Thread {
 					
 					int jStart = 0;
 					int jLast =  jStart + Integer.valueOf(taskNodes);
-					for (int j = jStart; j < jLast; j++) {
+					for (int j = jStart; j < jLast; ) {
 						taskRequestXML = "<response>";
 						taskRequestXML += "<taskblock>";
 						for (int k = 0; k < cInfo.maxTaskCount; k++)

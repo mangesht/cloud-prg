@@ -18,22 +18,24 @@ import com.amazonaws.services.ec2.model.DescribeInstanceStatusResult;
 import com.amazonaws.services.ec2.model.DescribeSpotInstanceRequestsRequest;
 import com.amazonaws.services.ec2.model.DescribeSpotInstanceRequestsResult;
 import com.amazonaws.services.ec2.model.InstanceAttribute;
+import com.amazonaws.services.ec2.model.InstanceAttributeName;
 import com.amazonaws.services.ec2.model.InstanceStatus;
 import com.amazonaws.services.ec2.model.LaunchSpecification;
+import com.amazonaws.services.ec2.model.ModifyInstanceAttributeRequest;
 import com.amazonaws.services.ec2.model.RequestSpotInstancesRequest;
 import com.amazonaws.services.ec2.model.RequestSpotInstancesResult;
 import com.amazonaws.services.ec2.model.SpotInstanceRequest;
 import com.amazonaws.services.ec2.model.DescribeInstanceAttributeRequest;
 import com.amazonaws.services.ec2.model.DescribeInstanceAttributeResult;
 import com.amazonaws.services.ec2.model.DescribeInstanceStatusRequest;
+
 import com.amazonaws.services.sqs.AmazonSQS.*; 
 import com.amazonaws.services.sqs.model.GetQueueAttributesRequest;
 import com.amazonaws.services.sqs.model.GetQueueAttributesResult;
 
 public class instanceManager extends Thread {
 	public commonInfo cInfo;
-	public Double  spotInstancePrice; 
-	public String myAMIID;  
+	
 	public AmazonEC2 ec2;
 	public List<InstanceInfo> instanceInfo;
 	ArrayList<String> activeInstanceIds;
@@ -68,13 +70,14 @@ public class instanceManager extends Thread {
 		// Initializes a Spot Instance Request
     	RequestSpotInstancesRequest requestRequest = new RequestSpotInstancesRequest();
     	// Request 1 x t1.small instance with a bid price of $0.007 
-    	requestRequest.setSpotPrice(spotInstancePrice.toString());
+    	requestRequest.setSpotPrice(cInfo.spotInstancePrice.toString());
     	requestRequest.setInstanceCount(workersToLaunch);
+    	
     	// Setup the specifications of the launch. This includes the instance type (e.g. t1.micro)
     	// and the latest Amazon Linux AMI id available. Note, you should always use the latest
     	// Amazon Linux AMI id or another of your choosing.
     	LaunchSpecification launchSpecification = new LaunchSpecification();
-    	launchSpecification.setImageId(myAMIID);
+    	launchSpecification.setImageId(cInfo.myAMIID);
     	launchSpecification.setInstanceType("m1.small");
     	
     	// Add the security group to the request.
@@ -98,7 +101,8 @@ public class instanceManager extends Thread {
     	}catch(AmazonClientException e ) { 
     		System.out.println("Request spot instance failed " + e.getMessage());
     	}
-    	
+    	ModifyInstanceAttributeRequest m = new ModifyInstanceAttributeRequest(); 
+    	m.withInstanceInitiatedShutdownBehavior("terminate");		
 
     	// Setup an arraylist to collect all of the request ids we want to watch hit the running
     	// state.
@@ -142,9 +146,12 @@ public class instanceManager extends Thread {
 	        anyOpen=false;
 
 	    	try {
+	    		List<SpotInstanceRequest> describeResponses = new ArrayList<SpotInstanceRequest>(); 
 	    		// Retrieve all of the requests we want to monitor.
-	    		DescribeSpotInstanceRequestsResult describeResult = ec2.describeSpotInstanceRequests(describeRequest);
-	    		List<SpotInstanceRequest> describeResponses = describeResult.getSpotInstanceRequests();
+	    		if(ec2RequestId.size() > 0 ) { 
+	    			DescribeSpotInstanceRequestsResult describeResult = ec2.describeSpotInstanceRequests(describeRequest);
+	    			describeResponses = describeResult.getSpotInstanceRequests();
+	    		}
 
 	            // Look through each request and determine if they are all in the active state.
 	            for (SpotInstanceRequest describeResponse : describeResponses) {
@@ -193,7 +200,7 @@ public class instanceManager extends Thread {
 	    	
 	        for(String request : successfulRequests) { 
 	        	ec2RequestId.remove(request);
-	        	
+	        	launchedCount-- ; 
 	        }
 	        
 	    	}
@@ -202,18 +209,25 @@ public class instanceManager extends Thread {
 	
 	public void getInstanceHealthInfo(){ 
 		DescribeInstanceAttributeRequest dr = new DescribeInstanceAttributeRequest ();
+		
 		DescribeInstanceStatusRequest instStatusRequest = new DescribeInstanceStatusRequest ();
+		
 		System.out.println("Getting Health");
 		for(String s : activeInstanceIds) { 
 			System.out.println("Getting Health for " + s );
 			
 		}
-		instStatusRequest.setInstanceIds(activeInstanceIds);
-		DescribeInstanceStatusResult res =  ec2.describeInstanceStatus();
-		List<InstanceStatus> stats = res.getInstanceStatuses();
+		List<InstanceStatus> stats = new ArrayList<InstanceStatus>();
+		if(activeInstanceIds.size() > 0) { 
+			instStatusRequest.setInstanceIds(activeInstanceIds);
+			DescribeInstanceStatusResult res =  ec2.describeInstanceStatus();
+			stats = res.getInstanceStatuses();
+		}
 		ArrayList<String> localActiveInstanceIds = new ArrayList<String> () ; 
 		for (InstanceStatus s : stats) { 
 			System.out.println("Instance Id  = " + s.getInstanceId() +" Status " + s.getInstanceStatus() + "state " + s.getInstanceState());
+			// Valid values: 0 (pending) | 16 (running) | 32 (shutting-down) | 48 (terminated) | 64 (stopping) | 80 (stopped)
+
 			if(s.getInstanceState().getCode() <= 16) { 
 				localActiveInstanceIds.add(s.getInstanceId());
 			}
@@ -234,12 +248,12 @@ public class instanceManager extends Thread {
 		 activeInstanceIds.removeAll(localDeadInstanceIds);
 		 
 		 activeCount = activeInstanceIds.size() ; 
-		 launchedCount -= activeCount - lastActiveInstanceCount + deadInstanceCount ; 
+		 //launchedCount -= activeCount - lastActiveInstanceCount + deadInstanceCount ; 
 		 launchedCount = launchedCount < 0 ? 0 : launchedCount; // Protection against malicious acts 
 		 System.out.println("Launched " + launchedCount + " Active " + activeCount +
 				 " LastActive " + lastActiveInstanceCount + " Dead Now " +deadInstanceCount );
-		 
-		 lastActiveInstanceCount =  activeInstanceIds.size();
+		 System.out.println("Launch Request size " + ec2RequestId.size());
+		 lastActiveInstanceCount =  activeCount;
 		 totalWorkers = launchedCount + activeCount;
 		/*
 		for(String instance : activeInstanceIds) { 
@@ -288,10 +302,9 @@ public class instanceManager extends Thread {
 		int iterminated = 0 ;
 		int workerToLaunch = 0;
 		int tCount = 0 ; 
-		spotInstancePrice = 0.007;
-		myAMIID = "ami-3fec7956";
 		
-	
+		
+			
 		initilizeAmazonEC2();
 		/*
 		// bewakuf 
@@ -304,6 +317,7 @@ public class instanceManager extends Thread {
 		*/  
 		while(true && cInfo.schedMode == 0){
 			numJobs = getQueueSize();
+			workerToLaunch = 0 ; 
 			if (totalWorkers < cInfo.maxRemoteWorkers && numJobs > 0 ) {
 				// Find out how many workers need to be launched
 				workerToLaunch = (numJobs - launchedCount) ;
@@ -322,7 +336,7 @@ public class instanceManager extends Thread {
 				ec2RequestId.addAll(freshRequests);
 			}
 			try {
-				sleep(1000*2);
+				sleep(1000*5);
 				tCount++;
 			} catch (InterruptedException e) {
 				// TODO Auto-generated catch block
@@ -330,7 +344,7 @@ public class instanceManager extends Thread {
 			}
 			
 			
-			if (tCount % 1 == 0 ){
+			if (tCount % 5 == 0 ){
 				// Cancel the request when instance is started i.e. Open
 				monitorAndCancelRequest();
 			}
