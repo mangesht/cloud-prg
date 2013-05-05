@@ -53,7 +53,7 @@ public class resultCollector extends Thread {
     
     public List<String> receiveCompletedRequestRemote() {
 		ReceiveMessageRequest receiveMessageRequest = new ReceiveMessageRequest(cInfo.resultQueueUrl);
-		receiveMessageRequest .setMaxNumberOfMessages(10);
+		receiveMessageRequest.setMaxNumberOfMessages(10);
 		List<String> strs = new ArrayList<String>(); 
 		messages.clear();
 		while(true) { 
@@ -85,6 +85,7 @@ public class resultCollector extends Thread {
 		}
 		for(Message m : messages ) {
 			System.out.println("Message body " + m.getBody());
+			System.out.println("    ReceiptHandle: " + m.getReceiptHandle());
 			strs.add(m.getBody()) ;// = str.concat(m.getBody()); 
 		}
 		return strs;
@@ -218,8 +219,11 @@ public class resultCollector extends Thread {
     
     public void cleanupCompletedRequest() {
     	if (cInfo.remoteWorker == true) {
-    		String messageRecieptHandle = messages.get(0).getReceiptHandle();
-    		cInfo.sqs.deleteMessage(new DeleteMessageRequest(cInfo.resultQueueUrl , messageRecieptHandle));
+    		for(Message m : messages) { 
+    				String messageRecieptHandle = m.getReceiptHandle();
+    				cInfo.sqs.deleteMessage(new DeleteMessageRequest(cInfo.resultQueueUrl , messageRecieptHandle));	
+    		}
+    		
     	}
     }
     
@@ -257,7 +261,8 @@ public class resultCollector extends Thread {
         	for (String response : resposes) {
         		System.out.println("RC : received request = " + response);
         		processedResponseXML = processCompletedRequest(response);
-        		System.out.println("RC :processCompletedRequest completed " );
+        		System.out.println("RC :processCompletedRequest completed " + processedResponseXML );
+        		millisleep(10);
            	 	sendTCPResponseXML(processedResponseXML );
         		
         	}
