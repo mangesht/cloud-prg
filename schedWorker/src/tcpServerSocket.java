@@ -58,7 +58,7 @@ public class tcpServerSocket extends Thread implements Runnable {
 				Socket s = listenSocket.accept();
 				String host = s.getInetAddress().getHostName();
 				acceptSocketList.add(s);
-				millisleep(500);
+				millisleep(50);
 			}catch (Exception error) {
 				System.err.println("Unable to listen to server socket");
 			}
@@ -91,7 +91,7 @@ public class tcpServerSocket extends Thread implements Runnable {
 					acceptSocket = iter.next();
 					if (acceptSocket == null) {
 						System.err.println("did not find accept Socket");					
-						millisleep(500);
+						millisleep(50);
 					} else {
 						System.err.println("found an accept Socket");					
 						iter.remove();

@@ -14,7 +14,7 @@ public class client {
 	static OutputStream outputSockStream;
 	static int taskRecievedCount=0;
 	static int taskSentCount=0;
-	static int maxTaskCount=5;
+	static int maxTaskCount=25;
 
 	public static void receiveResponseFromScheduler() {
 

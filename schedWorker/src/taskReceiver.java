@@ -50,15 +50,11 @@ public class taskReceiver extends Thread {
 							+ requestXML + "}");
 				  remoteSend(requestXML);							 
 				  
-			  } else if (isLocalWorkerAvailable()) {
+			  } else {
 				  /*System.out.println("Adding to local worker queue :\n{" 
 						  								+ requestXML + "}");*/ 
 				  cInfo.taskQ.put(requestXML);
-			  } else {
-				  System.err.println("All workers are busy, retry next time");
-				  Thread.sleep(500);
-				  return false;
-			  }
+			  } 
 		  } catch (Exception error) {
 			  System.err.println("Task Receiver : " +
 					  "Error in adding request to worker queue " +
@@ -250,7 +246,7 @@ public class taskReceiver extends Thread {
 			if (bRet == true) {
 				processRequest(taskRequestXML);
 			}
-			millisleep(500);
+			millisleep(50);
 		}
 		
 	}

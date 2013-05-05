@@ -250,11 +250,10 @@ public class resultCollector extends Thread {
         {
         	responses = receiveCompletedRequest();	
         	for (String response : responses) {
-        		System.out.println("RC : received request = " + response);
         		response = response.trim();
         		processedResponseXML = processCompletedRequest(response);
-        		System.out.println("RC :processCompletedRequest completed " + processedResponseXML );
-        		millisleep(10);
+        		System.out.println("RC :processCompletedRequest completed " +
+        									processedResponseXML );
            	 	sendTCPResponseXML(processedResponseXML );
         	}
         	   	
