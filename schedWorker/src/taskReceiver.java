@@ -37,7 +37,7 @@ public class taskReceiver extends Thread {
 	   if (cInfo.localAvailWorkerCount > 0) {
 		   return true;
 	   }
-	   return false;
+	   return true;
    }
    
    public boolean putrequestIntoQueue(String requestXML) {

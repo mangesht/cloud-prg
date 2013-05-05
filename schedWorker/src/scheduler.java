@@ -20,7 +20,9 @@ public class scheduler {
 		System.out.println("Usage : " + 
 				"java schedWorker -s <listening_port> " +
 								 "-l <num_localworkers>" +
-								 " [-r] ");
+								 " [-r] " + 
+								 "[-m schedMode]");
+		System.out.println();
 	}
 
 	public static void SQSInit(){

@@ -16,6 +16,7 @@ import org.w3c.dom.Text;
 
 import com.amazonaws.AmazonServiceException;
 import com.amazonaws.services.sqs.model.DeleteMessageRequest;
+import com.amazonaws.services.sqs.model.GetQueueAttributesRequest;
 import com.amazonaws.services.sqs.model.Message;
 import com.amazonaws.services.sqs.model.ReceiveMessageRequest;
 
@@ -59,6 +60,7 @@ public class resultCollector extends Thread {
 		while(true) { 
 			
 				System.out.println("Waiting for result from remote");
+										
 				messages = cInfo.sqs.receiveMessage(receiveMessageRequest).getMessages();
 				System.out.println("Done Waiting for result from remote");
 				
@@ -259,7 +261,7 @@ public class resultCollector extends Thread {
         	
         	cleanupCompletedRequest();
         	
-        	millisleep(500);
+        	//millisleep(500);
         }
 	}
 }

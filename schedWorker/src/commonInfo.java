@@ -39,9 +39,9 @@ public class commonInfo {
 		spotInstancePrice = 0.007;
 		remoteWorker = false;
 		localWorkers = 32;
-		serverPort = 9876;
+		serverPort = 9100;
 		maxRemoteWorkers = 32 ; 
-		schedMode = 0; //0 - Normal schedule for controlling remote instance
+		schedMode = 1; //0 - Normal schedule for controlling remote instance
 					  //1  - Disabled for manual instances to do the job
 					  // 2 Control given to cloudWatch
 	}
