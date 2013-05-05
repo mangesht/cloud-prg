@@ -1,7 +1,7 @@
 SRC_DIR=src
 BIN_DIR=bin
 AWS_SDK_VERSION=1.4.3
-AWS_SDK_HOME=../aws-java-sdk-${AWS_SDK_VERSION}
+AWS_SDK_HOME=../aws-java-sdk/${AWS_SDK_VERSION}
 JAVA_CLASS_FILES=commonInfo.class  executor.class watchDogTimer.class remoteWorker.class
 INPSORT_CLASS_FILES= InPlaceSort.class 
 MAPREDUCE_CLASS_FILES=WordCountMR.class
@@ -20,8 +20,8 @@ all:remoteWorker
 run:remoteWorker.class
 	java -classpath ${CLASSPATH} remoteWorker ${OPT} 
 
-cleanJ:
-	rm -rf  $(addprefix ${SRC_DIR}/, ${JAVA_CLASS_FILES})
+clean:
+	rm -rf bin/*.class 
 cleanMR:
 	rm -rf  $(addprefix ${SRC_DIR}/, ${MAPREDUCE_CLASS_FILES})
 
