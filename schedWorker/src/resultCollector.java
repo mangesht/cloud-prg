@@ -116,7 +116,7 @@ public class resultCollector extends Thread {
 			Element requestElement =  requestDoc.getDocumentElement();
 			NodeList taskBlockNode = requestElement.getChildNodes();
 			taskResponseXML = "<response>";
-			System.out.println("Response Rx = " + xmlResponse + "\n block Length = " + taskBlockNode.getLength());
+			//System.out.println("Response Rx = " + xmlResponse + "\n block Length = " + taskBlockNode.getLength());
 			
 			for (int i = 0; i < taskBlockNode.getLength(); i++) {
 				Element taskBlock  = (Element) taskBlockNode.item(i);
@@ -171,17 +171,6 @@ public class resultCollector extends Thread {
 
     public String  processCompletedRequest(String taskRequestXML) {
     	   return parseCompletedRequestLocal(taskRequestXML);
-    	   
-    /*	   Since we do not separate functions to process the responses from 
-     * local and remote workers 
-     * 
-	   if (cInfo.remoteWorker == true) {
-		   parseCompletedRequestRemote(taskRequestXML);
-	   } else {
-		   parseCompletedRequestLocal(taskRequestXML);
-	   }
-	   */ 
-	   
     }
 
     public void sendTCPResponseXML(String res) {
@@ -253,18 +242,18 @@ public class resultCollector extends Thread {
 	}  
 	
 	public void run(){
-		List<String> resposes = new ArrayList<String>(); 
+		List<String> responses = new ArrayList<String>(); 
 		String processedResponseXML; 
         while(true)
         {
-        	resposes = receiveCompletedRequest();	
-        	for (String response : resposes) {
+        	responses = receiveCompletedRequest();	
+        	for (String response : responses) {
         		System.out.println("RC : received request = " + response);
+        		response = response.trim();
         		processedResponseXML = processCompletedRequest(response);
         		System.out.println("RC :processCompletedRequest completed " + processedResponseXML );
         		millisleep(10);
            	 	sendTCPResponseXML(processedResponseXML );
-        		
         	}
         	   	
         	

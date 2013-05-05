@@ -73,53 +73,124 @@ public class tcpServerSocket extends Thread implements Runnable {
 	
 	public Socket retrieveAcceptSocket() {
 		Socket acceptSocket = null;
+		if (acceptSocketList == null) {
+			System.err.println("acceptSocketList not initialised");
+			return null;
+		} else 
 		if (acceptSocketList.isEmpty()) {
+			//System.err.println("accept Socket not available yet (1)");
 			return null;
 		}
 		else {
 			Iterator<Socket> iter = acceptSocketList.iterator();
-			while (iter.hasNext()) {
-				acceptSocket = iter.next();
-				iter.remove();
-				millisleep(500);
-				break;
+			if (iter == null) {
+				System.err.println("accept Socket not available yet (2)");
+				return null;
+			} else {
+				while (iter.hasNext()) {
+					acceptSocket = iter.next();
+					if (acceptSocket == null) {
+						System.err.println("did not find accept Socket");					
+						millisleep(500);
+					} else {
+						System.err.println("found an accept Socket");					
+						iter.remove();
+						break;
+					}
+				}
 			}
+			System.err.println("returning an accept Socket");					
 			return acceptSocket;
 		}
 	}
 	
-	private String getRawRequest(InputStream in) throws IOException {
-		byte buf[] = new byte[1024];
-		int pos = 0;
-		boolean continueReading=true; 
+	public String readStringFromStream(InputStream inputSockStream) 
+			throws IOException {
+				  String taskresponse = "";
+			      int availLen;
+			      int readLen;
+			      int pos = 0;
+			      byte b[] = new byte[1024];
+			      int c = 1024;
+				  boolean continueReading = true;
+				  boolean readStarted = false;
+				  System.out.println("readStringFromStream");
+				  c = 0;
+				  while (c < 1024) {
+					  b[c] = 0;
+					  c++;
+				  }
+				  
+				  while (continueReading) {
+				      boolean endOfBuffer;
+				      
+				      endOfBuffer = false;
+				      
+					  availLen = inputSockStream.available();
+					  if (availLen == 0) {
+						  if (readStarted == true) {
+							  continueReading = false;
+							  continue;
+						  }
+					  }
+					  else {
+						  //System.out.println("available length=" + availLen);
+					  }
+					  
+					  if (pos + availLen > 1024) {
+						  readLen = 1024 - pos;
+						  endOfBuffer = true;
+					 } else {
+						  readLen = availLen;
+					  }
+					  //System.out.println("readLen=" + readLen + " pos = " + pos);
+					  inputSockStream.read(b, pos, readLen);
 
-		while (pos < 1024) {
-			buf[pos++] = (byte) 0;
-		}
-		
-		pos = 0;
-		while (continueReading) {
-			int len;
-			len = in.available();
-			if (len > 0) {
-				if (pos+len > 1024) {
-					len = (pos + len) - 1024; 
-				}
-				in.read(buf, pos, len);
-				pos += len;
-			}
-			else {
-				if (pos > 0) continueReading = false;
-				else millisleep(500);
-			}
-		}
-		
-		return (new String(buf, 0, pos));
+
+					  if (endOfBuffer == true) {
+						  //System.out.println("fullbuffer taskresponse length=" 
+						//		  	+ taskresponse.length());
+						  c = 0;
+						  while (c < 1024) {
+							  if (b[c] == 0) break;
+							  readStarted = true;
+							  taskresponse += (char) b[c];
+							  //System.out.println("(1)taskresponse=" + taskresponse);
+							  b[c] = 0;
+							  c++;
+						  }
+						  //System.out.println("(2)taskresponse=" + taskresponse);
+						  pos = 0;
+					  } else {
+						  //System.out.println("partial buffer ");
+						  
+						  if ((pos == 0) && (readLen == 0)) {
+							  if (readStarted == true) {
+								  System.out.println("(2)readLen=" + readLen + " pos = " + pos);
+								  continueReading = false;
+								  continue;
+							  }
+						  }
+						  c = 0;
+						  while (c < 1024) {
+							  if (b[c] == 0) break;
+							  readStarted = true;
+							  taskresponse += (char) b[c];
+							  c++;
+						  }
+						  //System.out.println("(3)taskresponse=" + taskresponse);
+						  pos += readLen;
+					  }
+					  
+				  }
+				  System.out.println("readStringFromStream len=" + taskresponse.length());
+				  return taskresponse;
 	}
 	
+		
 	public String readString(Socket s)  throws IOException {
 		InputStream in = s.getInputStream();
-		String readString = getRawRequest(in);
+		String readString = readStringFromStream(in);
 		return readString;
 	}
 	

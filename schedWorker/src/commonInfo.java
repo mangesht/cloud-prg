@@ -31,15 +31,15 @@ public class commonInfo {
 	public String myAMIID;
 	public Double spotInstancePrice; 
 	commonInfo () {
-		/* Lets keeo remoteWorker as default false,
+		/* Lets keep remoteWorker as default false,
 		 * otherwise it will always get priority over
 		 * the command line specification of -lw.
 		 */
 		myAMIID = "ami-79ddb010";
 		spotInstancePrice = 0.007;
-		remoteWorker = true;
-		localWorkers = 0;
-		serverPort = 9100;
+		remoteWorker = false;
+		localWorkers = 32;
+		serverPort = 9876;
 		maxRemoteWorkers = 32 ; 
 		schedMode = 0; //0 - Normal schedule for controlling remote instance
 					  //1  - Disabled for manual instances to do the job

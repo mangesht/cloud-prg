@@ -118,7 +118,7 @@ public class taskReceiver extends Thread {
 
 		try {
  		    xmlRequest = xmlRequest.trim();
-		    System.out.println(xmlRequest);			
+		    //System.out.println(xmlRequest);			
 			DocumentBuilderFactory fact1 = DocumentBuilderFactory.newInstance();
 			fact1.setValidating(false);
 			fact1.setIgnoringElementContentWhitespace(true);
@@ -175,7 +175,7 @@ public class taskReceiver extends Thread {
    public boolean receiveRequestXML() {
 		  byte[] receiveData = new byte[11024];
 		  try {
-			  System.out.println("Server waiting for task ");
+			  //System.out.println("Server waiting for task ");
 			  receivePacket = new DatagramPacket(receiveData, 
 					  							receiveData.length);
 			  cInfo.serverSocket.receive(receivePacket);
@@ -244,19 +244,13 @@ public class taskReceiver extends Thread {
 	
 	public void run(){
 		boolean bRet;
-		int retryCount;
 		System.out.println("taskReceiver running .. ");
 		while (true){
-			retryCount = 1;
-			do {
 			bRet = receiveTCPRequestXML();
-			if (bRet == true) break;
-			retryCount--;
-			millisleep(500);
-			} while (retryCount > 0);
 			if (bRet == true) {
 				processRequest(taskRequestXML);
 			}
+			millisleep(500);
 		}
 		
 	}

@@ -30,7 +30,7 @@ public class worker extends Thread {
 		idxSpc = s.indexOf(' ');
 		sc = s.substring(idxSpc);
 		sc = sc.trim(); 
-		System.out.println("Sleep Time = " + Integer.valueOf(sc) ); 
+		//System.out.println("Sleep Time = " + Integer.valueOf(sc) ); 
 		return Integer.valueOf(sc);  
 		 
 	}
@@ -38,9 +38,9 @@ public class worker extends Thread {
 	public boolean executeTask(Text txtTaskId, Text txtTaskStr) {
 		// Currently only sleep task is accepted as per the project
 		   sleepTime =  getSleepTime(txtTaskStr.getData()); 
-		   System.out.println("localworker " + threadId +
-				   					" sleepTime = " + sleepTime +
-				   					" taskid = " + txtTaskId.getData());
+		   //System.out.println("localworker " + threadId +
+			//	   					" sleepTime = " + sleepTime +
+			//	   					" taskid = " + txtTaskId.getData());
 
 			try {
 				sleep(sleepTime);
@@ -147,9 +147,9 @@ public class worker extends Thread {
 	 	 
 	     while(true) { 
     	   requestXML = getRequestFromQueue();
-		   System.out.print("Worker = " + threadId + 
+		   System.out.print("\nWorker = " + threadId + 
 				   			" Received task : Len " + requestXML.length() + 
-				   			" Task : " + requestXML  );
+				   			"\nTask : {" + requestXML + "}\n"  );
 		   processRequest(requestXML);
 	   
 		   putResponseIntoQueue(taskResponseXML);
