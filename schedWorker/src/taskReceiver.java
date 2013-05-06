@@ -41,8 +41,9 @@ public class taskReceiver extends Thread {
 		   for(String message: messages ) {
 			   batchEntries.add(new SendMessageBatchRequestEntry(idCount .toString(),message));
 			   idCount++; 
+		  
+			   cInfo.sqs.sendMessageBatch( new SendMessageBatchRequest(cInfo.taskQueueUrl,batchEntries));
 		   }
-		   cInfo.sqs.sendMessageBatch( new SendMessageBatchRequest(cInfo.taskQueueUrl,batchEntries));
 		   //SendMessageBatchRequest s = new SendMessageBatchRequest(cInfo.taskQueueUrl);
 		   //cInfo.sqs.sendMessageBatch(); 
 		   // Batch way 
@@ -100,10 +101,11 @@ public class taskReceiver extends Thread {
 			NodeList taskStrNode  = task.getElementsByTagName("taskstr");
 			Text txtTaskStr = (Text) taskStrNode.item(0).getFirstChild();
 			requestXML += "<taskstr>" + txtTaskStr.getData() + "</taskstr>";	
-			requestXML += "</task>";	
+			requestXML += "</task>";
+			
 		}
 		requestXML += "</taskblock>";	
-
+		
 		return requestXML;
 	}
 	
@@ -155,6 +157,7 @@ public class taskReceiver extends Thread {
 			for (int i = 0; i < taskBlockNode.getLength(); i++) {
 				String taskNodes;
 				String batchJob;
+				jobRequests.clear(); 
 				Element taskBlock  = (Element) taskBlockNode.item(i);
 				taskNodes = taskBlock.getAttribute("taskNodes");
 				batchJob = taskBlock.getAttribute("batchJob");
@@ -180,9 +183,12 @@ public class taskReceiver extends Thread {
 						}
 						taskRequestXML += "</taskblock>";
 						taskRequestXML += "</response>";
+						System.out.println("JOb request " + taskRequestXML);
 						jobRequests.add(taskRequestXML);
 					}
+					System.out.println("JOb request Size" + jobRequests.size());
 					putrequestIntoQueue(jobRequests);
+					
 					//putrequestIntoQueue(taskRequestXML);
 					
 				}
@@ -227,9 +233,10 @@ public class taskReceiver extends Thread {
 			  acceptSocket = cInfo.serverTCPSocket.retrieveAcceptSocket();
 			  if (acceptSocket == null) return false;
 			  cInfo.acceptSocket = acceptSocket;
+			  tcpReceivedRequests = "";
 			  tcpReceivedRequests = cInfo.serverTCPSocket.readString(cInfo.acceptSocket);
 			  tcpReceivedRequests = tcpReceivedRequests.trim();
-			  
+			  //System.out.println("Received from client " +tcpReceivedRequests  ) ;
 			  return true;
 		      
 		  } catch (Exception error) {

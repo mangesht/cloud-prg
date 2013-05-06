@@ -27,18 +27,18 @@ public class SQSReceiver extends Thread {
 		 
 		while(true) { 
 				messages.clear();	
-				System.out.println("Waiting for result from remote");
+				//System.out.println("Waiting for result from remote");
 										
 				messages = cInfo.sqs.receiveMessage(receiveMessageRequest).getMessages();
-				System.out.println("Done Waiting for result from remote");
+				//System.out.println("Done Waiting for result from remote");
 						
 			if (messages != null  ) {
-				System.out.println("Result Queue Size " + messages.size());
+				//System.out.println("Result Queue Size " + messages.size());
 				
 				if (messages.size() > 0 ) {
-					System.out.println("SR Locking ");
+					//System.out.println("SR Locking ");
 					
-					cInfo.getLock();
+					//cInfo.getLock();
 					try {
 						this.rcHandle.available.acquire();
 						this.available.acquire();
@@ -46,7 +46,7 @@ public class SQSReceiver extends Thread {
 						// TODO Auto-generated catch block
 						e.printStackTrace();
 					}
-					System.out.println("SR IN ");
+					//System.out.println("SR IN ");
 					//
 					for(Message m : messages ) {
 						//System.out.println("Message body " + m.getBody());
@@ -59,11 +59,11 @@ public class SQSReceiver extends Thread {
 						messageRecieptHandle = m.getReceiptHandle();
 	    				cInfo.sqs.deleteMessage(new DeleteMessageRequest(cInfo.resultQueueUrl , messageRecieptHandle));
 					}
-					System.out.println("SR UnLocking ");
-					cInfo.getUnlock();
+					//System.out.println("SR UnLocking ");
+					//cInfo.getUnlock();
 					this.available.release();
 					this.rcHandle.available.release();
-					System.out.println("SR Out  ");
+					//System.out.println("SR Out  ");
 				}
 				
 			} else 

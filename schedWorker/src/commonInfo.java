@@ -10,7 +10,7 @@ import java.util.concurrent.locks.ReentrantLock;
 
 public class commonInfo {
 	public BlockingQueue <String> taskQ;
-	public List<String> resultQ ;  
+	public BlockingQueue<String> resultQ ;  
 	public InetAddress IPAddress; 
 	public Integer port ;
 	public int serverPort;
@@ -55,8 +55,8 @@ public class commonInfo {
 		
 		myAMIID = "ami-79ddb010";
 		spotInstancePrice = 0.007;
-		remoteWorker = false;
-		localWorkers = 32;
+		remoteWorker = true;
+		localWorkers = 1;
 		serverPort = 9100;
 		maxRemoteWorkers = 32 ;
 		

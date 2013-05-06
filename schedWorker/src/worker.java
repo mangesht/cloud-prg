@@ -138,6 +138,7 @@ public class worker extends Thread {
    
    public String getRequestFromQueue() {
 	String inpStr = "";	   
+	 
    	try {
 		inpStr = cInfo.taskQ.take();
 		status = cInfo.busy;
@@ -164,7 +165,8 @@ public class worker extends Thread {
     	   requestXML = getRequestFromQueue();
 		   /*System.out.print("\nWorker = " + threadId + 
 				   			" Received task : Len " + requestXML.length() + 
-				   			"\nTask : {" + requestXML + "}\n"  );*/
+				   			"\nTask : {" + requestXML + "}\n"  );
+				   			*/
 		   processRequest(requestXML);
 	   
 		   putResponseIntoQueue(taskResponseXML);

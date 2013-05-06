@@ -126,7 +126,7 @@ public class scheduler {
     
     public static void initialiseQueues() {
 		BlockingQueue <String> taskQ = new ArrayBlockingQueue<String>(1024);
-		List<String> resultQ =   new ArrayList<String>(1024);    
+		BlockingQueue<String> resultQ =   new ArrayBlockingQueue<String>(1024);    
 		cInfo.taskQ = taskQ; 
 		cInfo.resultQ = resultQ;
 		System.out.println("Queue initialised");
