@@ -1,6 +1,8 @@
 import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;
 import java.net.*;
+import java.util.ArrayList;
+import java.util.List;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -10,19 +12,47 @@ import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
 import org.w3c.dom.Text;
 import com.amazonaws.AmazonClientException;
+import com.amazonaws.services.sqs.model.SendMessageBatchRequest;
+import com.amazonaws.services.sqs.model.SendMessageBatchRequestEntry;
 import com.amazonaws.services.sqs.model.SendMessageRequest;
 
 public class taskReceiver extends Thread {
 	public commonInfo cInfo; 
 	   
-   static String taskRequestXML;
+   //static String taskRequestXML;
+	static String tcpReceivedRequests; 
    static String responseXML;
    static DatagramPacket receivePacket;
    static DatagramPacket sendPacket;
    	
-	 public void remoteSend(String message) {
-	   try { 
-		   cInfo.sqs.sendMessage(new SendMessageRequest(cInfo.taskQueueUrl, message));
+	 public void remoteSend(List<String> messages) {
+		 boolean batch = false; 
+		 String id;
+		 Integer idCount = 0 ; 
+	   try {
+		   if ( batch == false) {
+			   for(String message: messages ) {  
+				   cInfo.sqs.sendMessage(new SendMessageRequest(cInfo.taskQueueUrl, message));
+			   }
+		   } else { 
+			   
+		   
+		   List<SendMessageBatchRequestEntry> batchEntries = new ArrayList<SendMessageBatchRequestEntry>() ;
+		   for(String message: messages ) {
+			   batchEntries.add(new SendMessageBatchRequestEntry(idCount .toString(),message));
+			   idCount++; 
+		   }
+		   cInfo.sqs.sendMessageBatch( new SendMessageBatchRequest(cInfo.taskQueueUrl,batchEntries));
+		   //SendMessageBatchRequest s = new SendMessageBatchRequest(cInfo.taskQueueUrl);
+		   //cInfo.sqs.sendMessageBatch(); 
+		   // Batch way 
+		   /* 
+		   public SendMessageBatchRequestEntry(String id,
+		   SendMessageBatchRequestEntry(String id, String messageBody)
+           SendMessageBatchRequest(String queueUrl, List<SendMessageBatchRequestEntry> entries)
+           Constructs a new SendMessageBatchRequest object        String messageBody)
+		   */
+		   }
 	   } catch (AmazonClientException ace) {
         System.out.println("Caught an AmazonClientException, which means the client encountered " +
                 "a serious internal problem while trying to communicate with SQS, such as not " +
@@ -32,20 +62,21 @@ public class taskReceiver extends Thread {
 
 	}
 		
-   public boolean putrequestIntoQueue(String requestXML) {
+   public boolean putrequestIntoQueue(List<String> requestXML) {
 	   
 	     
 		  try {	   
 			  if (cInfo.remoteWorker == true) {
 				  /* put into remote task queue SQS ? */
-				  System.out.println("Adding to remote worker queue :\n{" 
-							+ requestXML + "}");
+				  //System.out.println("Adding to remote worker queue :\n{"	+ requestXML + "}");
 				  remoteSend(requestXML);							 
 				  
 			  } else {
 				  /*System.out.println("Adding to local worker queue :\n{" 
-						  								+ requestXML + "}");*/ 
-				  cInfo.taskQ.put(requestXML);
+						  								+ requestXML + "}");*/
+				  for(String message : requestXML) { 
+					  cInfo.taskQ.put(message);
+				  }
 			  } 
 		  } catch (Exception error) {
 			  System.err.println("Task Receiver : " +
@@ -103,7 +134,8 @@ public class taskReceiver extends Thread {
 	   	
 	public void processRequest(String xmlRequest)
 	{
-
+			List<String> jobRequests = new ArrayList<String>();
+			String taskRequestXML; 
 		try {
  		    xmlRequest = xmlRequest.trim();
 		    //System.out.println(xmlRequest);			
@@ -132,7 +164,7 @@ public class taskReceiver extends Thread {
 					taskRequestXML = "<response>";
 					taskRequestXML += processCompleteBlock(taskBlock);
 					taskRequestXML += "</response>";
-					putrequestIntoQueue(taskRequestXML);
+					jobRequests.add(taskRequestXML);
 				} else {
 					
 					int jStart = 0;
@@ -148,8 +180,10 @@ public class taskReceiver extends Thread {
 						}
 						taskRequestXML += "</taskblock>";
 						taskRequestXML += "</response>";
-						putrequestIntoQueue(taskRequestXML);
+						jobRequests.add(taskRequestXML);
 					}
+					putrequestIntoQueue(jobRequests);
+					//putrequestIntoQueue(taskRequestXML);
 					
 				}
 			}
@@ -160,6 +194,7 @@ public class taskReceiver extends Thread {
 		}		
 	} 
 	
+	/*
    public boolean receiveUDPRequestXML() {
 		  byte[] receiveData = new byte[11024];
 		  try {
@@ -184,7 +219,7 @@ public class taskReceiver extends Thread {
 			  return false;
 		  }
 	   }
-   
+   */
    public boolean receiveTCPRequestXML() {
 		  Socket acceptSocket;
 		  
@@ -192,8 +227,8 @@ public class taskReceiver extends Thread {
 			  acceptSocket = cInfo.serverTCPSocket.retrieveAcceptSocket();
 			  if (acceptSocket == null) return false;
 			  cInfo.acceptSocket = acceptSocket;
-			  taskRequestXML = cInfo.serverTCPSocket.readString(cInfo.acceptSocket);
-			  taskRequestXML = taskRequestXML.trim();
+			  tcpReceivedRequests = cInfo.serverTCPSocket.readString(cInfo.acceptSocket);
+			  tcpReceivedRequests = tcpReceivedRequests.trim();
 			  
 			  return true;
 		      
@@ -221,11 +256,12 @@ public class taskReceiver extends Thread {
 		boolean bRet;
 		System.out.println("taskReceiver running .. ");
 		while (true){
+			System.out.print(".");
 			bRet = receiveTCPRequestXML();
 			if (bRet == true) {
-				processRequest(taskRequestXML);
+				processRequest(tcpReceivedRequests);
 			}
-			//millisleep(50);
+			millisleep(500);
 		}
 		
 	}

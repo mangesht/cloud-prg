@@ -15,7 +15,8 @@ public class client {
 	static int taskRecievedCount=0;
 	static int taskSentCount=0;
 	static int maxTaskCount=25;
-
+	static long start;
+	static long stop;
 	public static void receiveUDPResponseFromScheduler() {
 
 		if (xmlRequest == null) {
@@ -392,13 +393,16 @@ public class client {
 		if(parseArgs(args) == false) {
 			return;
 		}
-		
+		long  BILLION = 1000000000;
+		start = System.nanoTime();
 		generateRequestXMLFile();
 		
 		sendTCPRequestToScheduler();
 		
 		receiveTCPResponseFromScheduler();
-
+		stop= System.nanoTime();
+		
+		System.out.println("Total Time Taken in seconds : " + (stop - start) / BILLION);
 
 	}
 }

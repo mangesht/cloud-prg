@@ -1,5 +1,7 @@
 
 import java.net.*;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 
@@ -124,7 +126,7 @@ public class scheduler {
     
     public static void initialiseQueues() {
 		BlockingQueue <String> taskQ = new ArrayBlockingQueue<String>(1024);
-		BlockingQueue <String> resultQ =   new ArrayBlockingQueue<String>(1024);    
+		List<String> resultQ =   new ArrayList<String>(1024);    
 		cInfo.taskQ = taskQ; 
 		cInfo.resultQ = resultQ;
 		System.out.println("Queue initialised");
@@ -152,7 +154,7 @@ public class scheduler {
 		resultCollector resCollector = new resultCollector();
 		resCollector.cInfo = cInfo; 
 		resCollector.start();
-		
+		System.out.println("Result Collector Started ");
 		/* Start Worker Threads */
 		/* Moved worker to cinfo, as i need to have
 		 * per worker statistics also there and this would be 

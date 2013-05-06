@@ -5,6 +5,7 @@ import java.net.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map.Entry;
+import java.util.concurrent.Semaphore;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -22,30 +23,54 @@ import com.amazonaws.services.sqs.model.ReceiveMessageRequest;
 
 public class resultCollector extends Thread {
 	public commonInfo cInfo; 
-	
+	SQSReceiver sqsReceiver ;  
 	//String taskResponseXML; 	
 	DatagramPacket receivePacket;
 	DatagramPacket sendPacket;
 	List<Message> messages = null ;
+	 
+	public Semaphore available; 
 	resultCollector(){
 		messages = new ArrayList<Message>(); 
+		available = new Semaphore(1, true);
 	}
     public List<String> receiveCompletedRequestLocal() {
     	int sz  = 0 ;
     	int i;
     	List<String> strs = new ArrayList<String>();
+    	strs.clear();
 		try {
+						
+			System.out.println("RC Locking "); 
+			this.available.acquire(); 
+			this.sqsReceiver.available.acquire();
+			System.out.println("RC IN");
 			sz = cInfo.resultQ.size();
+			System.out.println("Getting messages from resultQ " + sz);
 			if(sz > 0 ) { 
 				for(i=0;i<sz;i++){ 
-					strs.add(cInfo.resultQ.take()); 
+					strs.addAll(cInfo.resultQ); 
+					cInfo.resultQ.clear(); 
 				}
 			}else {
-				strs.add(cInfo.resultQ.take());
+				this.millisleep(500);
+				/*
+				String s ; 
+				System.out.println(" Before adding strs size  " + strs.size()+  "  " );
+				s = cInfo.resultQ.take();
+				System.out.println(" adding strs size  " + strs.size()+  "  " + s );
+				strs.add(s);
+				*/
 			}
+			System.out.println("RC UnLocking "); 
+					
+			this.sqsReceiver.available.release();
+			this.available.release();
+			System.out.println("RC OUT ");
 			//return  cInfo.resultQ.take();
 		} catch (InterruptedException e) {
 			// TODO Auto-generated catch block
+			System.err.println("RC Wait Error " + e.getMessage());
 			e.printStackTrace();
 		}
 		return strs;  
@@ -95,11 +120,15 @@ public class resultCollector extends Thread {
     }
 	
     public List<String>  receiveCompletedRequest() {
+    	return receiveCompletedRequestLocal();
+    	/* SQS receiver takes messages from SQS and puts them in local Queue 
+    	 * So Only local Queue should be checked 
 		if(cInfo.remoteWorker == false ){
 			return receiveCompletedRequestLocal();
     	} else {
     		return receiveCompletedRequestRemote();
 	   }	
+	   */
     }
     
    public String  parseCompletedRequestLocal(String xmlResponse)   {
@@ -214,9 +243,20 @@ public class resultCollector extends Thread {
 	public void run(){
 		List<String> responses = new ArrayList<String>(); 
 		String processedResponseXML; 
+		
+		sqsReceiver = new SQSReceiver();
+		
+		sqsReceiver.cInfo = this.cInfo;
+		sqsReceiver.rcHandle = this; 
+		System.out.println("Inside Result Collector Starting SQS receiver");
+		if (cInfo.remoteWorker = true ) { 
+			sqsReceiver.start();
+		}
         while(true)
         {
-        	responses = receiveCompletedRequest();	
+        	responses.clear();
+        	responses = receiveCompletedRequest();
+        	if(responses.size() > 0 ) { 
         	for (String response : responses) {
         		response = response.trim();
         		processedResponseXML = processCompletedRequest(response);
@@ -224,7 +264,11 @@ public class resultCollector extends Thread {
         									processedResponseXML );
            	 	sendTCPResponseXML(processedResponseXML );
         	}
-       	    cleanupCompletedRequest();
+        	} else { 
+        		this.millisleep(500);
+        	}
+        	
+       	    //cleanupCompletedRequest();
         }
 	}
 }
