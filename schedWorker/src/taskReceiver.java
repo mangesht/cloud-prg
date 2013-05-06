@@ -232,11 +232,13 @@ public class taskReceiver extends Thread {
 		  try {
 			  acceptSocket = cInfo.serverTCPSocket.retrieveAcceptSocket();
 			  if (acceptSocket == null) return false;
+			  
 			  cInfo.acceptSocket = acceptSocket;
+			  System.out.println("Buffer Size " +  acceptSocket.getReceiveBufferSize());
 			  tcpReceivedRequests = "";
 			  tcpReceivedRequests = cInfo.serverTCPSocket.readString(cInfo.acceptSocket);
 			  tcpReceivedRequests = tcpReceivedRequests.trim();
-			  //System.out.println("Received from client " +tcpReceivedRequests  ) ;
+			  System.out.println("Received from client " +tcpReceivedRequests  ) ;
 			  return true;
 		      
 		  } catch (Exception error) {
@@ -262,10 +264,40 @@ public class taskReceiver extends Thread {
 	public void run(){
 		boolean bRet;
 		System.out.println("taskReceiver running .. ");
+		String residual = new String(); 
 		while (true){
 			System.out.print(".");
 			bRet = receiveTCPRequestXML();
 			if (bRet == true) {
+				if(tcpReceivedRequests.contains("<request>")) { 
+					System.out.println("First request");
+					if(tcpReceivedRequests.contains("</request>")){
+					//if (false) { 
+						System.out.println("Last request");
+						// DOnothing 
+					}else{
+						int idx;
+						idx = tcpReceivedRequests.lastIndexOf("</taskBlock>") +  "</taskBlock>".length();
+						residual = tcpReceivedRequests.substring(idx);
+						tcpReceivedRequests = tcpReceivedRequests.substring(0, idx);
+						tcpReceivedRequests += "</request>";
+						System.out.println("Residue-" + residual );
+						System.out.println("tcpReceivedRequests-" + tcpReceivedRequests );
+						// Need to suffix with end request tag 
+						
+					}
+				}else if (tcpReceivedRequests.contains("</request>")) {
+					tcpReceivedRequests = "<request>" + tcpReceivedRequests ; 
+				}else{
+					int idx;
+					idx = tcpReceivedRequests.lastIndexOf("</taskBlock>") +  "</taskBlock>".length();
+					residual = tcpReceivedRequests.substring(idx);
+					tcpReceivedRequests = tcpReceivedRequests.substring(0, idx);
+					tcpReceivedRequests += "</request>";
+					tcpReceivedRequests = "<request>" + tcpReceivedRequests ; 
+					System.out.println("Residue-" + residual );
+					System.out.println("tcpReceivedRequests-" + tcpReceivedRequests );
+				}
 				processRequest(tcpReceivedRequests);
 			}
 			millisleep(500);
