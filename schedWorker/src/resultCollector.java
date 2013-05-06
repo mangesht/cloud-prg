@@ -41,12 +41,12 @@ public class resultCollector extends Thread {
     	strs.clear();
 		try {
 						
-			System.out.println("RC Locking "); 
+			//System.out.println("RC Locking "); 
 			this.available.acquire(); 
 			this.sqsReceiver.available.acquire();
 			System.out.println("RC IN");
 			sz = cInfo.resultQ.size();
-			System.out.println("Getting messages from resultQ " + sz);
+			//System.out.println("Getting messages from resultQ " + sz);
 			if(sz > 0 ) { 
 				for(i=0;i<sz;i++){ 
 					strs.addAll(cInfo.resultQ); 
@@ -62,11 +62,11 @@ public class resultCollector extends Thread {
 				strs.add(s);
 				*/
 			}
-			System.out.println("RC UnLocking "); 
+			//System.out.println("RC UnLocking "); 
 					
 			this.sqsReceiver.available.release();
 			this.available.release();
-			System.out.println("RC OUT ");
+			//System.out.println("RC OUT ");
 			//return  cInfo.resultQ.take();
 		} catch (InterruptedException e) {
 			// TODO Auto-generated catch block
@@ -111,8 +111,8 @@ public class resultCollector extends Thread {
 			}
 		}
 		for(Message m : messages ) {
-			System.out.println("Message body " + m.getBody());
-			System.out.println("    ReceiptHandle: " + m.getReceiptHandle());
+			//System.out.println("Message body " + m.getBody());
+			//System.out.println("    ReceiptHandle: " + m.getReceiptHandle());
 			strs.add(m.getBody()) ;// = str.concat(m.getBody()); 
 		}
 		return strs;
