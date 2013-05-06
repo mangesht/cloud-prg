@@ -64,7 +64,7 @@ public class executor extends Thread {
 		   System.out.println("localworker " + 
 				   					" sleepTime = " + sleepTime +
 				   					" taskid = " + txtTaskId.getData());
-
+			
 			try {
 				Thread.sleep(sleepTime);
 				return true;
@@ -130,14 +130,15 @@ public class executor extends Thread {
 			System.out.println("Try to get message from " + cInfo.taskQueueUrl ); 
 			ReceiveMessageRequest receiveMessageRequest = new ReceiveMessageRequest(cInfo.taskQueueUrl);
 			receiveMessageRequest .setMaxNumberOfMessages(1);
+			receiveMessageRequest.setWaitTimeSeconds(10);
 			//Recursively try to get the job 
 			while(cInfo.die == false) { 
 				messages = cInfo.sqs.receiveMessage(receiveMessageRequest).getMessages();
 				if (messages.size() > 0 ) { 
 					break;
-				}else{
+				}else { 
 					try {
-						Thread.sleep(1000);
+						sleep(100);
 					} catch (InterruptedException e) {
 						// TODO Auto-generated catch block
 						e.printStackTrace();
@@ -146,7 +147,7 @@ public class executor extends Thread {
 			}
 			// Process all the received messages
 			for (Message message : messages) {
-				System.out.println("  Message");
+				/* System.out.println("  Message");
 				System.out.println("    MessageId:     " + message.getMessageId());
 				System.out.println("    ReceiptHandle: " + message.getReceiptHandle());
 				System.out.println("    MD5OfBody:     " + message.getMD5OfBody());
@@ -156,7 +157,7 @@ public class executor extends Thread {
 					System.out.println("    Name:  " + entry.getKey());
 					System.out.println("    Value: " + entry.getValue());
 				}
-
+				 */
 				// Task done at some worker , send this info to client 
 				res = message.getBody();
 
@@ -177,7 +178,9 @@ public class executor extends Thread {
 	            System.out.println("Deleting a message.\n");
 	            String messageRecieptHandle = messages.get(0).getReceiptHandle();
 	            cInfo.sqs.deleteMessage(new DeleteMessageRequest(cInfo.taskQueueUrl, messageRecieptHandle));
+	            
 			}
+			messages.clear();
 	}
 	}
 }
