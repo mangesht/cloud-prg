@@ -1,7 +1,7 @@
 SRC_DIR=src
 BIN_DIR=bin
 AWS_SDK_VERSION=1.4.3
-AWS_SDK_HOME=/home/mangesh/aws-java-sdk/${AWS_SDK_VERSION}
+AWS_SDK_HOME=/home/ubuntu/aws-java-sdk-${AWS_SDK_VERSION}
 JAVA_CLASS_FILES=commonInfo.class instanceManager. taskReceiver.class worker.class InstanceInfo.class resultCollector.class scheduler.class 
 INPSORT_CLASS_FILES= InPlaceSort.class 
 MAPREDUCE_CLASS_FILES=WordCountMR.class
