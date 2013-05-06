@@ -104,88 +104,35 @@ public class tcpServerSocket extends Thread implements Runnable {
 		}
 	}
 	
-	public String readStringFromStream(InputStream inputSockStream) 
+	public String readStringFromStream(InputStream in) 
 			throws IOException {
-				  String taskresponse = "";
-			      int availLen;
-			      int readLen;
-			      int pos = 0;
-			      byte b[] = new byte[1024];
-			      int c = 1024;
-				  boolean continueReading = true;
-				  boolean readStarted = false;
-				  System.out.println("readStringFromStream");
-				  c = 0;
-				  while (c < 1024) {
-					  b[c] = 0;
-					  c++;
-				  }
-				  
-				  while (continueReading) {
-				      boolean endOfBuffer;
-				      
-				      endOfBuffer = false;
-				      
-					  availLen = inputSockStream.available();
-					  if (availLen == 0) {
-						  if (readStarted == true) {
-							  continueReading = false;
-							  continue;
-						  }
-					  }
-					  else {
-						  //System.out.println("available length=" + availLen);
-					  }
-					  
-					  if (pos + availLen > 1024) {
-						  readLen = 1024 - pos;
-						  endOfBuffer = true;
-					 } else {
-						  readLen = availLen;
-					  }
-					  //System.out.println("readLen=" + readLen + " pos = " + pos);
-					  inputSockStream.read(b, pos, readLen);
-
-
-					  if (endOfBuffer == true) {
-						  //System.out.println("fullbuffer taskresponse length=" 
-						//		  	+ taskresponse.length());
-						  c = 0;
-						  while (c < 1024) {
-							  if (b[c] == 0) break;
-							  readStarted = true;
-							  taskresponse += (char) b[c];
-							  //System.out.println("(1)taskresponse=" + taskresponse);
-							  b[c] = 0;
-							  c++;
-						  }
-						  //System.out.println("(2)taskresponse=" + taskresponse);
-						  pos = 0;
-					  } else {
-						  //System.out.println("partial buffer ");
-						  
-						  if ((pos == 0) && (readLen == 0)) {
-							  if (readStarted == true) {
-								  System.out.println("(2)readLen=" + readLen + " pos = " + pos);
-								  continueReading = false;
-								  continue;
-							  }
-						  }
-						  c = 0;
-						  while (c < 1024) {
-							  if (b[c] == 0) break;
-							  readStarted = true;
-							  taskresponse += (char) b[c];
-							  c++;
-						  }
-						  //System.out.println("(3)taskresponse=" + taskresponse);
-						  pos += readLen;
-					  }
-					  
-				  }
-				  System.out.println("readStringFromStream len=" + taskresponse.length());
-				  return taskresponse;
-	}
+		boolean bStart=false;
+		boolean bEnd=false;
+		StringBuffer out = new StringBuffer();
+		byte[] b = new byte[1024];
+		System.out.println("readStringFromStream");
+		while (bEnd == false) {
+			int n;
+			n = in.available();
+			if (n == 0) {
+				if (bStart == true) bEnd=true;
+			}
+			else  {
+				n = in.read(b);
+				System.out.println("readStringFromStream n=" + n);
+				if ((bStart == false) && (n > 0)) bStart=true;
+				if (bEnd == true) {
+					System.out.println("readStringFromStream end str=" +out.toString());
+					break;
+				}
+				out.append(new String(b, 0, n));
+				
+				System.out.println("readStringFromStream n=" + n + "str=" +out.toString());
+			}
+		}
+		return out.toString();
+	}	
+	
 	
 		
 	public String readString(Socket s)  throws IOException {

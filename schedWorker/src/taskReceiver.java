@@ -32,14 +32,6 @@ public class taskReceiver extends Thread {
 
 	}
 		
-   public boolean isLocalWorkerAvailable() {
-	   
-	   if (cInfo.localAvailWorkerCount > 0) {
-		   return true;
-	   }
-	   return true;
-   }
-   
    public boolean putrequestIntoQueue(String requestXML) {
 	   
 	     
@@ -168,7 +160,7 @@ public class taskReceiver extends Thread {
 		}		
 	} 
 	
-   public boolean receiveRequestXML() {
+   public boolean receiveUDPRequestXML() {
 		  byte[] receiveData = new byte[11024];
 		  try {
 			  //System.out.println("Server waiting for task ");
@@ -215,27 +207,14 @@ public class taskReceiver extends Thread {
 
 	private void millisleep(int n) {
 		try
-		   {
-		   // Sleep at least n milliseconds.
-		   // 1 millisecond = 1/1000 of a second.
+		{
+
 		   Thread.sleep( n );
-		   }
+		}
 		catch ( InterruptedException e )
-		   {
+		{
 		   System.out.println( "awakened prematurely" );
-	
-		   // If you want to simulate the interrupt happening
-		   // just after awakening, use the following line
-		   // so that our NEXT sleep or wait
-		   // will be interrupted immediately.
-		   // Thread.currentThread().interrupt();
-		   // Or have have same other thread awaken us:
-		   // Thread us;
-		   // ...
-		   // us = Thread.currentThread();
-		   // ...
-		   // us.interrupt();
-		   }
+		}
 	} 
 	
 	public void run(){
@@ -246,7 +225,7 @@ public class taskReceiver extends Thread {
 			if (bRet == true) {
 				processRequest(taskRequestXML);
 			}
-			millisleep(50);
+			//millisleep(50);
 		}
 		
 	}

@@ -16,7 +16,7 @@ public class client {
 	static int taskSentCount=0;
 	static int maxTaskCount=25;
 
-	public static void receiveResponseFromScheduler() {
+	public static void receiveUDPResponseFromScheduler() {
 
 		if (xmlRequest == null) {
 			System.err.println("no task request, returning");
@@ -64,87 +64,33 @@ public class client {
 
 	}
 
-	public static String readStringFromStream(InputStream inputSockStream) 
+	public static String readStringFromStream(InputStream in) 
 			throws IOException {
-				  String taskresponse = "";
-			      int availLen;
-			      int readLen;
-			      int pos = 0;
-			      byte b[] = new byte[1024];
-			      int c = 1024;
-				  boolean continueReading = true;
-				  boolean readStarted = false;
-
-				  c = 0;
-				  while (c < 1024) {
-					  b[c] = 0;
-					  c++;
-				  }
-				  
-				  while (continueReading) {
-				      boolean endOfBuffer;
-				      
-				      endOfBuffer = false;
-				      
-					  availLen = inputSockStream.available();
-					  if (availLen == 0) {
-						  if (readStarted == true) {
-							  continueReading = false;
-							  continue;
-						  }
-					  }
-					  else {
-						  //System.out.println("available length=" + availLen);
-					  }
-					  
-					  if (pos + availLen > 1024) {
-						  readLen = 1024 - pos;
-						  endOfBuffer = true;
-					 } else {
-						  readLen = availLen;
-					  }
-					  //System.out.println("readLen=" + readLen + " pos = " + pos);
-					  inputSockStream.read(b, pos, readLen);
-
-
-					  if (endOfBuffer == true) {
-						  //System.out.println("fullbuffer taskresponse length=" 
-						//		  	+ taskresponse.length());
-						  c = 0;
-						  while (c < 1024) {
-							  if (b[c] == 0) break;
-							  readStarted = true;
-							  taskresponse += (char) b[c];
-							  //System.out.println("(1)taskresponse=" + taskresponse);
-							  b[c] = 0;
-							  c++;
-						  }
-						  //System.out.println("(2)taskresponse=" + taskresponse);
-						  pos = 0;
-					  } else {
-						  //System.out.println("partial buffer ");
-						  //System.out.println("(2)readLen=" + readLen + " pos = " + pos);
-						  if ((pos == 0) && (readLen == 0)) {
-							  if (readStarted == true) {
-								  continueReading = false;
-								  continue;
-							  }
-						  }
-						  c = 0;
-						  while (c < 1024) {
-							  if (b[c] == 0) break;
-							  readStarted = true;
-							  taskresponse += (char) b[c];
-							  c++;
-						  }
-						  //System.out.println("(3)taskresponse=" + taskresponse);
-						  pos += readLen;
-					  }
-					  
-				  }
-				  //System.out.println("taskresponse=" + taskresponse);
-				  return taskresponse;
-	}
+		boolean bStart=false;
+		boolean bEnd=false;
+		StringBuffer out = new StringBuffer();
+		byte[] b = new byte[1024];
+		//System.out.println("readStringFromStream");
+		while (bEnd == false) {
+			int n;
+			n = in.available();
+			if (n == 0) {
+				if (bStart == true) bEnd=true;
+			}
+			else  {
+				n = in.read(b);
+				//System.out.println("readStringFromStream n=" + n);
+				if ((bStart == false) && (n > 0)) bStart=true;
+				if (bEnd == true) {
+					//System.out.println("readStringFromStream end str=" +out.toString());
+					break;
+				}
+				out.append(new String(b, 0, n));
+				//System.out.println("readStringFromStream n=" + n + "str=" +out.toString());
+			}
+		}
+		return out.toString();
+	}	
 	
 	public static void receiveTCPResponseFromScheduler() {
 		String taskresponse = "";
@@ -178,20 +124,23 @@ public class client {
 		  collectiveResponse += "</responses>";
 		  //System.out.print("RESPONSE len=" + taskresponse.length() + " DATA={" + taskresponse + "}");
 		  taskRecievedCount += printResponse(collectiveResponse);
-		  System.out.println("taskRecievedCount =" + taskRecievedCount + " taskSentCount=" + taskSentCount );
 
 		  if (taskRecievedCount == taskSentCount) {
 			  clientTCPSocket.close();
 			  break;
 		  }
 	    }
+	    
 	    catch (Exception error){
 		  System.err.println("Error in socket communication " + error.getMessage());
 	    }
 		}
+  	    System.out.println("taskRecievedCount =" + taskRecievedCount + 
+  	    				   " taskSentCount=" + taskSentCount );
+
 	}
 	
-	public static void sendRequestToScheduler() {
+	public static void sendUDPRequestToScheduler() {
 		if (xmlRequest == null) {
 			System.err.println("no task request, returning");
 			return;
@@ -253,7 +202,7 @@ public class client {
 	
 	public static int printResponse(String xmlResponse)
 	{
-		System.out.println("Response={" + xmlResponse + "}");
+		//System.out.println("Response={" + xmlResponse + "}");
 		int taskCount = 0;
 		try {
 			DocumentBuilderFactory fact1 = DocumentBuilderFactory.newInstance();
@@ -267,13 +216,13 @@ public class client {
 			Element requestElement =  requestDoc.getDocumentElement();
 			NodeList taskRespNode = requestElement.getChildNodes();
 			for (int resp =0;resp < taskRespNode.getLength(); resp++) {
-				System.out.println("New Response List");				
+				//System.out.println("New Response List");				
 				Element taskResp  = (Element) taskRespNode.item(resp);
 				NodeList taskBlockNode = taskResp.getChildNodes();
 				for (int i = 0; i < taskBlockNode.getLength(); i++) {
 					Element taskBlock  = (Element) taskBlockNode.item(i);
-					System.out.println("New Response Block");
-					System.out.println("-----------------");
+					//System.out.println("New Response Block");
+					//System.out.println("-----------------");
 					NodeList tasks  = taskBlock.getChildNodes();
 					for (int j = 0; j < tasks.getLength(); j++) {
 						Element task  = (Element) tasks.item(j);
@@ -290,13 +239,13 @@ public class client {
 					}
 				}
 			}
-			System.out.println("Completed Response List");				
+			//System.out.println("Completed Response List");				
 			
 		}
 		catch (Exception error) {
 			System.err.println("Error parsing : " + error.getMessage());
 		}
-		System.out.println("Returning task count " + taskCount);				
+		//System.out.println("Returning task count " + taskCount);				
 		
 		return 	taskCount;	
 	}
@@ -331,16 +280,16 @@ public class client {
 				while (taskStr != null) {
 					if (taskStr.equals("==batchStart==")) {
 						batchJob="true" ;
-						System.out.println("batchjobstart:noSplit = true; ");
+						//System.out.println("batchjobstart:noSplit = true; ");
 					}
 					else if (taskStr.equals("==batchEnd==")) {
-						System.out.println("batchjobend: ");
+						//System.out.println("batchjobend: ");
 						taskStr = breader.readLine();
 						break;
 					} else if (batchJob.equals("true") ||
 						       (taskidCounter < maxTaskCount)) {
 						taskidCounter++;
-						System.out.println("taskStr = " + taskStr);
+						//System.out.println("taskStr = " + taskStr);
 						xmltaskRequest +="<task>";
 						taskid++;
 						taskCount++;

@@ -153,24 +153,6 @@ public class resultCollector extends Thread {
 		return taskResponseXML; 
 	}  
    
-    public void parseCompletedRequestRemote(String xmlResponse)   {
-	   for (Message message : messages) {
-	       System.out.println("  Message");
-	       System.out.println("    MessageId:     " + message.getMessageId());
-	       System.out.println("    ReceiptHandle: " + message.getReceiptHandle());
-	       System.out.println("    MD5OfBody:     " + message.getMD5OfBody());
-	       System.out.println("    Body:          " + message.getBody());
-	       for (Entry<String, String> entry : message.getAttributes().entrySet()) {
-	           System.out.println("  Attribute");
-	           System.out.println("    Name:  " + entry.getKey());
-	           System.out.println("    Value: " + entry.getValue());
-	       }
-			
-			// Task done at some worker , send this info to client 
-	       xmlResponse += message.getBody();
-	   }
-    }
-
     public String  processCompletedRequest(String taskRequestXML) {
     	   return parseCompletedRequestLocal(taskRequestXML);
     }
@@ -195,7 +177,7 @@ public class resultCollector extends Thread {
   	   }          
      }
     
-    public void sendResponseXML(String res) {
+    public void sendUDPResponseXML(String res) {
        byte[] sendData = new byte[1024];
        try {
 	   sendData = res.getBytes();
@@ -220,27 +202,13 @@ public class resultCollector extends Thread {
     
 	private void millisleep(int n) {
 		try
-		   {
-		   // Sleep at least n milliseconds.
-		   // 1 millisecond = 1/1000 of a second.
+	    {
 		   Thread.sleep( n );
-		   }
+		}
 		catch ( InterruptedException e )
-		   {
+		{
 		   System.out.println( "awakened prematurely" );
-	
-		   // If you want to simulate the interrupt happening
-		   // just after awakening, use the following line
-		   // so that our NEXT sleep or wait
-		   // will be interrupted immediately.
-		   // Thread.currentThread().interrupt();
-		   // Or have have same other thread awaken us:
-		   // Thread us;
-		   // ...
-		   // us = Thread.currentThread();
-		   // ...
-		   // us.interrupt();
-		   }
+	    }
 	}  
 	
 	public void run(){
@@ -256,11 +224,7 @@ public class resultCollector extends Thread {
         									processedResponseXML );
            	 	sendTCPResponseXML(processedResponseXML );
         	}
-        	   	
-        	
-        	cleanupCompletedRequest();
-        	
-        	//millisleep(500);
+       	    cleanupCompletedRequest();
         }
 	}
 }
