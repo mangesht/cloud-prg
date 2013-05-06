@@ -19,8 +19,9 @@ for ($i=0;$i<4;$i++){
 			die "Could not open $fileName \n";
 		}
 		my $tNum ; 
+		my $slpTime = $td * 1000;
 		for ($tNum = 0 ; $tNum < $numTasks ; $tNum++) { 
-			print MYFH "sleep $td \n";
+			print MYFH "sleep $slpTime \n";
 		}
 		close MYFH;
 		
