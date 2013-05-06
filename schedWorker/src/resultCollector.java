@@ -250,7 +250,7 @@ public class resultCollector extends Thread {
 		sqsReceiver.cInfo = this.cInfo;
 		sqsReceiver.rcHandle = this; 
 		System.out.println("Inside Result Collector Starting SQS receiver");
-		if (cInfo.remoteWorker = true ) { 
+		if (cInfo.remoteWorker == true ) { 
 			sqsReceiver.start();
 		}
         while(true)
