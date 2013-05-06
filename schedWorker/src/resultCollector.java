@@ -44,7 +44,7 @@ public class resultCollector extends Thread {
 			//System.out.println("RC Locking "); 
 			this.available.acquire(); 
 			this.sqsReceiver.available.acquire();
-			System.out.println("RC IN");
+			//System.out.println("RC IN");
 			sz = cInfo.resultQ.size();
 			//System.out.println("Getting messages from resultQ " + sz);
 			if(sz > 0 ) { 
