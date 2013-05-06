@@ -164,7 +164,8 @@ public class resultCollector extends Thread {
 					NodeList taskStrNode  = task.getElementsByTagName("taskstr");
 					
 					Text txtTaskStr = (Text) taskStrNode.item(0).getFirstChild();
-					
+					System.out.println("RC :processCompletedRequest completed " + txtTaskId.getData() );
+							
 					taskResponseXML += "<taskstr>" + txtTaskStr.getData() + "</taskstr>";	
 					
 					taskResponseXML += "<taskstatus>" + "success" + "</taskstatus>";	
@@ -260,8 +261,7 @@ public class resultCollector extends Thread {
         	for (String response : responses) {
         		response = response.trim();
         		processedResponseXML = processCompletedRequest(response);
-        		System.out.println("RC :processCompletedRequest completed " +
-        									processedResponseXML );
+        		
            	 	sendTCPResponseXML(processedResponseXML );
         	}
         	} else { 

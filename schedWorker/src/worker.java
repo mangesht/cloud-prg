@@ -116,9 +116,24 @@ public class worker extends Thread {
    }
    
    public void putResponseIntoQueue(String taskResponseXML) {
+	   boolean addSuccess = false;
+	   int count = 0;
+	   while (addSuccess == false)
+	   try {
 	   cInfo.resultQ.add(taskResponseXML);
 	   status = cInfo.available;
 	   cInfo.localAvailWorkerCount++;
+	   addSuccess = true;
+	   
+	   } catch (IllegalStateException e) {
+		   try {
+			   Thread.sleep(50);
+			   count++;
+			   if (count > 100) break;
+		   } catch (Exception e1) {
+			   
+		   }
+	   }
    }
    
    public String getRequestFromQueue() {
@@ -147,9 +162,9 @@ public class worker extends Thread {
 	 	 
 	     while(true) { 
     	   requestXML = getRequestFromQueue();
-		   System.out.print("\nWorker = " + threadId + 
+		   /*System.out.print("\nWorker = " + threadId + 
 				   			" Received task : Len " + requestXML.length() + 
-				   			"\nTask : {" + requestXML + "}\n"  );
+				   			"\nTask : {" + requestXML + "}\n"  );*/
 		   processRequest(requestXML);
 	   
 		   putResponseIntoQueue(taskResponseXML);

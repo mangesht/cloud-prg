@@ -110,7 +110,7 @@ public class tcpServerSocket extends Thread implements Runnable {
 		boolean bEnd=false;
 		StringBuffer out = new StringBuffer();
 		byte[] b = new byte[1024];
-		System.out.println("readStringFromStream");
+		//System.out.println("readStringFromStream");
 		while (bEnd == false) {
 			int n;
 			n = in.available();
@@ -119,15 +119,15 @@ public class tcpServerSocket extends Thread implements Runnable {
 			}
 			else  {
 				n = in.read(b);
-				System.out.println("readStringFromStream n=" + n);
+				//System.out.println("readStringFromStream n=" + n);
 				if ((bStart == false) && (n > 0)) bStart=true;
 				if (bEnd == true) {
-					System.out.println("readStringFromStream end str=" +out.toString());
+					//System.out.println("readStringFromStream end str=" +out.toString());
 					break;
 				}
 				out.append(new String(b, 0, n));
 				
-				System.out.println("readStringFromStream n=" + n + "str=" +out.toString());
+				//System.out.println("readStringFromStream n=" + n + "str=" +out.toString());
 			}
 		}
 		return out.toString();
