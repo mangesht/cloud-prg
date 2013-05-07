@@ -120,7 +120,7 @@ public class client {
 				}
 				bLen =  n ; 
 				str = new String(b,0,n).trim();
-				System.out.println("P1 : "+str);
+				//System.out.println("P1 : "+str);
 				if(str.contains("</response>")){ 
 					 idx = str.lastIndexOf("</response>");
 					 idx = idx + "</response>".length();
@@ -135,8 +135,8 @@ public class client {
 					 }
 					 remStr = new String(b,0,rem).trim();
 					 bLen = rem; 
-					 System.out.println("P20 : str =" + str ) ;   
-					 System.out.println("P2 : bLen " + bLen + " n = " + n + "Rem str = " + remStr ) ;   
+					 //System.out.println("P20 : str =" + str ) ;   
+					 //System.out.println("P2 : bLen " + bLen + " n = " + n + "Rem str = " + remStr ) ;   
 					 break;
 				}
 			}else { 
