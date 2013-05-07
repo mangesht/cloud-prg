@@ -232,8 +232,11 @@ public class taskReceiver extends Thread {
 		  
 		  try {
 			  acceptSocket = cInfo.serverTCPSocket.retrieveAcceptSocket();
-			  if (acceptSocket == null) return false;
-			  
+			  if (acceptSocket == null) {
+				  System.out.println("Accept Socket Null"); 
+				  return false; } 
+			  System.out.println("AcceptSocket " + acceptSocket.getPort());
+			 
 			  cInfo.acceptSocket = acceptSocket;
 			  System.out.println("Buffer Size " +  acceptSocket.getReceiveBufferSize());
 			  tcpReceivedRequests = "";
