@@ -259,10 +259,22 @@ public class client {
   	      //clientTCPSocket.setSendBufferSize(size);
 		  inputSockStream = clientTCPSocket.getInputStream();
 		  outputSockStream = clientTCPSocket.getOutputStream();
-		  
-		  outputSockStream.write(xmlRequest.getBytes());
-		  System.out.println("Buffer Size = " + clientTCPSocket.getSendBufferSize());
-		  System.out.println("SENTXMLFILE LENGTH=" + xmlRequest.length() + " DATA={" + xmlRequest + "}" );
+		  int beginIndex = 0 ;
+		  int endIndex = 0 ; 
+		  int maxSize = xmlRequest.length ();
+		  String str; 
+		  endIndex = 8000; 
+		  endIndex = maxSize < endIndex ? maxSize : endIndex ;  
+		  while(endIndex <= maxSize){ 
+			  str = xmlRequest.substring(beginIndex, endIndex);
+			  beginIndex = endIndex +1 ; 
+			  endIndex = beginIndex + 8000; 
+			  endIndex = maxSize < endIndex ? maxSize : endIndex ;
+			  //outputSockStream.write(xmlRequest.getBytes());
+			  outputSockStream.write(str.getBytes());
+			  System.out.println("Buffer Size = " + clientTCPSocket.getSendBufferSize());
+			  System.out.println("SENTXMLFILE LENGTH=" + str.length() + " DATA={" + str  + "}" );
+		  }
 	    }
 	    catch (Exception error){
 		  System.err.println("Error in socket communication " + error.getMessage());
