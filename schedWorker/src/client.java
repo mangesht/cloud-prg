@@ -17,12 +17,15 @@ public class client {
 	static int maxTaskCount=25;
 	static long start;
 	static long stop;
-	static byte[] b ; //= new byte[11024];
+//	static byte[] b ; //= new byte[11024];
 	static int bLen = 0 ; 
+	static String  remStr; 
 	client(){ 
-		 b = new byte[11024];
+//		 b = new byte[5000];
 		bLen = 0 ; 
+		remStr = ""; 
 	}
+	/*
 	public static void receiveUDPResponseFromScheduler() {
 
 		if (xmlRequest == null) {
@@ -63,13 +66,14 @@ public class client {
 		  }
 	    }
 	    catch (Exception error){
-		  System.err.println("Error in socket communication " + error.getMessage());
+		  System.err.println("W1 Error in socket communication " + error.getMessage());
 	    }
 		}
 		
 	    clientSocket.close();
 
 	}
+	*/
 
 	public static String readStringFromStream(InputStream in) 
 			throws IOException {
@@ -78,6 +82,7 @@ public class client {
 		StringBuffer out = new StringBuffer();
 		String str = new String();
 		int idx ; 
+		byte[]  b = new byte[5000];
 		//System.out.println("readStringFromStream");
 		/* 
 		while (bEnd == false) {
@@ -98,42 +103,44 @@ public class client {
 				//System.out.println("readStringFromStream n=" + n + "str=" +out.toString());
 			}
 		}
-		*/ 
 		System.out.println("Q4 starting ");
+		*/
 		while(bEnd == false) { 
 			int n;
 			int rem;
 			n = in.available();
-			System.out.println("Q5 starting n =  " + n );
+			//System.out.println("Q5 starting n =  " + n );
 			if (n > 0) {
 				n = n > 5000 ? 5000 : n ;  
 				//System.out.println("Reading from bLen = " + bLen + " n = " + n ) ; 
 				try {
-					n = in.read(b, bLen, n);
+					n = in.read(b, 0, n);
 				} catch(IOException e) { 
 					System.out.println("Reading Error : " + e.getMessage());
 				}
-				bLen = bLen + n ; 
-				str = new String(b,0,bLen);
+				bLen =  n ; 
+				str = new String(b,0,n).trim();
 				System.out.println("P1 : "+str);
 				if(str.contains("</response>")){ 
 					 idx = str.lastIndexOf("</response>");
 					 idx = idx + "</response>".length();
 					 rem = bLen - idx;
+					 str = str.substring(0,idx);
+					 //str = str.trim();
+  					//remStr = remStr.trim();
+					 if (remStr != null) 
+					 str = remStr + str ; 
 					 for (int k = 0 ; k < rem ; k++) { 
 						 b[k] = b[idx+k];
 					 }
+					 remStr = new String(b,0,rem).trim();
 					 bLen = rem; 
-					 System.out.println("P2 : bLen " + bLen + " n = " + n ) ;   
+					 System.out.println("P20 : str =" + str ) ;   
+					 System.out.println("P2 : bLen " + bLen + " n = " + n + "Rem str = " + remStr ) ;   
 					 break;
 				}
 			}else { 
-				try {
-					Thread.sleep(50);
-				} catch (InterruptedException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
+				bEnd = true;
 			}
 		}
 		//return out.toString();
@@ -175,12 +182,25 @@ public class client {
 
 		  if (taskRecievedCount == taskSentCount) {
 			  clientTCPSocket.close();
+			 System.out.println("CLoasing client socket ");
 			  break;
 		  }
 	    }
 	    
 	    catch (Exception error){
-		  System.err.println("Error in socket communication " + error.getMessage());
+		  System.err.println("W1 Error in socket communication " + error.getMessage());
+		  
+				try {
+					Thread.sleep(50);
+				} catch (InterruptedException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			try { 
+			  inputSockStream = clientTCPSocket.getInputStream();
+		    	  } catch (Exception e1){
+			  System.err.println("Error in socket communication " + e1.getMessage());
+	   	}
 	    }
 		}
   	    System.out.println("taskRecievedCount =" + taskRecievedCount + 
