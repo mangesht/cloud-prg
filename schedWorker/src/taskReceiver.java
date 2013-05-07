@@ -140,7 +140,7 @@ public class taskReceiver extends Thread {
 			String taskRequestXML; 
 		try {
  		    xmlRequest = xmlRequest.trim();
-		    //System.out.println(xmlRequest);			
+		    System.out.println(xmlRequest);			
 			DocumentBuilderFactory fact1 = DocumentBuilderFactory.newInstance();
 			fact1.setValidating(false);
 			fact1.setIgnoringElementContentWhitespace(true);
@@ -232,9 +232,9 @@ public class taskReceiver extends Thread {
 		  try {
 			  acceptSocket = cInfo.serverTCPSocket.retrieveAcceptSocket();
 			  if (acceptSocket == null) return false;
-			  
+			  acceptSocket.setReceiveBufferSize(300000);
 			  cInfo.acceptSocket = acceptSocket;
-			  System.out.println("Buffer Size " +  acceptSocket.getReceiveBufferSize());
+			  System.out.println("Buffer SIze " + acceptSocket.getReceiveBufferSize());
 			  tcpReceivedRequests = "";
 			  tcpReceivedRequests = cInfo.serverTCPSocket.readString(cInfo.acceptSocket);
 			  tcpReceivedRequests = tcpReceivedRequests.trim();
