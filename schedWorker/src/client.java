@@ -17,6 +17,11 @@ public class client {
 	static int maxTaskCount=25;
 	static long start;
 	static long stop;
+	static byte[] b ; //= new byte[11024];
+	static int bLen = 0 ; 
+	void client(){ 
+		 b = new byte[11024];
+	}
 	public static void receiveUDPResponseFromScheduler() {
 
 		if (xmlRequest == null) {
@@ -70,8 +75,10 @@ public class client {
 		boolean bStart=false;
 		boolean bEnd=false;
 		StringBuffer out = new StringBuffer();
-		byte[] b = new byte[1024];
+		String str;
+		int idx ; 
 		//System.out.println("readStringFromStream");
+		/* 
 		while (bEnd == false) {
 			int n;
 			n = in.available();
@@ -88,6 +95,37 @@ public class client {
 				}
 				out.append(new String(b, 0, n));
 				//System.out.println("readStringFromStream n=" + n + "str=" +out.toString());
+			}
+		}
+		*/ 
+		while(bEnd == false) { 
+			int n;
+			int rem;
+			n = in.available();
+			if (n > 0) {
+				n = n > 5000 ? 5000 : n ;  
+				n = in.read(b, bLen, n);
+				bLen = 0 + n ; 
+				str = new String(b,0,bLen);
+				System.out.println("P1 : "+str);
+				if(str.contains("</response>")){ 
+					 idx = str.lastIndexOf("</response>");
+					 idx = idx + "</response>".length();
+					 rem = bLen - idx;
+					 for (int k = 0 ; k < rem ; k++) { 
+						 b[k] = b[idx+k];
+					 }
+					 bLen = rem; 
+					 System.out.println("P2 : bLen " + bLen + " n = " + n ) ;   
+					 break;
+				}
+			}else { 
+				try {
+					Thread.sleep(50);
+				} catch (InterruptedException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
 			}
 		}
 		return out.toString();
@@ -189,12 +227,13 @@ public class client {
   	    try {	
   	      clientTCPSocket = new Socket(serverIpAddress, 
 				  				Integer.valueOf(serverPort));
-		  
+  	      //clientTCPSocket.setSendBufferSize(size);
 		  inputSockStream = clientTCPSocket.getInputStream();
 		  outputSockStream = clientTCPSocket.getOutputStream();
 		  
 		  outputSockStream.write(xmlRequest.getBytes());
-		  //System.out.println("SENTXMLFILE LENGTH=" + xmlRequest.length() + " DATA={" + xmlRequest + "}" );
+		  System.out.println("Buffer Size = " + clientTCPSocket.getSendBufferSize());
+		  System.out.println("SENTXMLFILE LENGTH=" + xmlRequest.length() + " DATA={" + xmlRequest + "}" );
 	    }
 	    catch (Exception error){
 		  System.err.println("Error in socket communication " + error.getMessage());
