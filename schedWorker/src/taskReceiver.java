@@ -1,5 +1,6 @@
 import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.net.*;
 import java.util.ArrayList;
 import java.util.List;
@@ -140,7 +141,7 @@ public class taskReceiver extends Thread {
 			String taskRequestXML; 
 		try {
  		    xmlRequest = xmlRequest.trim();
-		    System.out.println(xmlRequest);			
+		    //System.out.println(xmlRequest);			
 			DocumentBuilderFactory fact1 = DocumentBuilderFactory.newInstance();
 			fact1.setValidating(false);
 			fact1.setIgnoringElementContentWhitespace(true);
@@ -232,16 +233,16 @@ public class taskReceiver extends Thread {
 		  try {
 			  acceptSocket = cInfo.serverTCPSocket.retrieveAcceptSocket();
 			  if (acceptSocket == null) return false;
-			  acceptSocket.setReceiveBufferSize(300000);
+			  
 			  cInfo.acceptSocket = acceptSocket;
-			  System.out.println("Buffer SIze " + acceptSocket.getReceiveBufferSize());
+			  System.out.println("Buffer Size " +  acceptSocket.getReceiveBufferSize());
 			  tcpReceivedRequests = "";
 			  tcpReceivedRequests = cInfo.serverTCPSocket.readString(cInfo.acceptSocket);
 			  tcpReceivedRequests = tcpReceivedRequests.trim();
 			  System.out.println("Received from client " +tcpReceivedRequests  ) ;
 			  return true;
 		      
-		  } catch (Exception error) {
+		  } catch (IOException error) {
 			  System.err.println("Task Receiver : " +
 					  "Error in socket communication " + error.getMessage());
 			  cInfo.serverSocket.close();
@@ -265,6 +266,7 @@ public class taskReceiver extends Thread {
 		boolean bRet;
 		System.out.println("taskReceiver running .. ");
 		String residual = new String(); 
+		
 		while (true){
 			System.out.print(".");
 			bRet = receiveTCPRequestXML();
