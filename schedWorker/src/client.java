@@ -19,8 +19,9 @@ public class client {
 	static long stop;
 	static byte[] b ; //= new byte[11024];
 	static int bLen = 0 ; 
-	void client(){ 
+	client(){ 
 		 b = new byte[11024];
+		bLen = 0 ; 
 	}
 	public static void receiveUDPResponseFromScheduler() {
 
@@ -43,7 +44,7 @@ public class client {
 			System.err.println("request not yet sent to scheduler");
 			return;					
 		}
-		System.out.println("Waiting for response from server");
+		System.out.println("Q1 Waiting for response from server");
 		while(true) {
 	    try {	
 	      String collectiveResponse;
@@ -75,7 +76,7 @@ public class client {
 		boolean bStart=false;
 		boolean bEnd=false;
 		StringBuffer out = new StringBuffer();
-		String str;
+		String str = new String();
 		int idx ; 
 		//System.out.println("readStringFromStream");
 		/* 
@@ -98,14 +99,21 @@ public class client {
 			}
 		}
 		*/ 
+		System.out.println("Q4 starting ");
 		while(bEnd == false) { 
 			int n;
 			int rem;
 			n = in.available();
+			System.out.println("Q5 starting n =  " + n );
 			if (n > 0) {
 				n = n > 5000 ? 5000 : n ;  
-				n = in.read(b, bLen, n);
-				bLen = 0 + n ; 
+				//System.out.println("Reading from bLen = " + bLen + " n = " + n ) ; 
+				try {
+					n = in.read(b, bLen, n);
+				} catch(IOException e) { 
+					System.out.println("Reading Error : " + e.getMessage());
+				}
+				bLen = bLen + n ; 
 				str = new String(b,0,bLen);
 				System.out.println("P1 : "+str);
 				if(str.contains("</response>")){ 
@@ -128,7 +136,8 @@ public class client {
 				}
 			}
 		}
-		return out.toString();
+		//return out.toString();
+		return str;
 	}	
 	
 	public static void receiveTCPResponseFromScheduler() {
@@ -152,7 +161,7 @@ public class client {
 			System.err.println("request not yet sent to scheduler");
 			return;					
 		}
-		System.out.println("Waiting for response from server");
+		System.out.println("Q2 Waiting for response from server");
 		while(true) {
 	    try {	
 	      String collectiveResponse="";
