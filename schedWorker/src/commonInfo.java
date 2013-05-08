@@ -54,7 +54,7 @@ public class commonInfo {
 		
 		
 		myAMIID = "ami-3f107c56";
-		spotInstancePrice = 0.007;
+		spotInstancePrice = 0.01;
 		remoteWorker = false;
 		localWorkers = 1;
 		serverPort = 9100;
