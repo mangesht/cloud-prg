@@ -128,7 +128,7 @@ public class tcpServerSocket extends Thread implements Runnable {
 	
 	public String readStringFromStream(InputStream in) 
 			throws IOException {
-		boolean bStart=false;
+		//boolean bStart=false;
 		boolean bEnd=false;
 		StringBuffer out = new StringBuffer();
 		String sentinel="";
@@ -138,28 +138,28 @@ public class tcpServerSocket extends Thread implements Runnable {
 			int n;
 			n = in.available();
 			if (n == 0) {
-				if (bStart == true) bEnd=true;
-			        else {
+				//if (bStart == true) 
+				bEnd=true;
+			        //else {
 				/* If we dont get any data in the stream, we wait for 10 500 millisecond intervals
                                    before concluding to return empty string to upper layer.
                                    As soon as we do that, we send the XML file for parsing.
                                    A better approach is to send the length of the file in the header and waiting till 
                                    we receive that many.
                                  */
-				if (i++ > 10) return "END";
-				}
+				//if (i++ > 10) return "END";
+				//}
 			}
 			else  {
 				n = in.read(b);
-				if ((bStart == false) && (n > 0)) bStart=true;
-				if (bEnd == true) {
-					break;
-				}
-				sentinel =(new String(b, n-3, 3));
+				//if ((bStart == false) && (n > 0)) bStart=true;
+				//if (bEnd == true) {
+				//	break;
+				//}
+				//sentinel =(new String(b, n-3, 3));
+				//System.out.println("sentinel=" + sentinel);
 				out.append(new String(b, 0, n));
-				System.out.println("sentinel=" + sentinel);
-
-				if (sentinel.equals("END"))
+				//if (sentinel.equals("END"))
 				break;
 			}
 		}
