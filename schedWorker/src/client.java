@@ -207,8 +207,8 @@ public class client {
   	    				   " taskSentCount=" + taskSentCount );
 
 	}
-	
-	public static void sendUDPRequestToScheduler() {
+	/*	
+	public static void sendUDPRequestToScheduler() {%
 		if (xmlRequest == null) {
 			System.err.println("no task request, returning");
 			return;
@@ -227,8 +227,8 @@ public class client {
 		  clientSocket = new DatagramSocket();
 		  InetAddress IPAddress = InetAddress.getByName(serverIpAddress);
 		  byte[] sendData = new byte[1024];
-		  sendData = xmlRequest.getBytes();
-		  DatagramPacket sendPacket = new DatagramPacket(sendData,
+		  //sendData = xmlRequest.getBytes();
+		  DatagramPacket sendPacket = new DatagramPacket(xmlRequest.getBytes(),
 				  		sendData.length, IPAddress, Integer.valueOf(serverPort));
 		  clientSocket.send(sendPacket);
 		  //System.out.println("SENTXMLFILE LENGTH=" + xmlRequest.length() + " DATA={" + xmlRequest + "}" );
@@ -237,6 +237,7 @@ public class client {
 		  System.err.println("Error in socket communication " + error.getMessage());
 	    }
 	}
+	*/
 	
 	public static void sendTCPRequestToScheduler() {
 		if (xmlRequest == null) {
