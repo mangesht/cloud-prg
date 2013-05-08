@@ -107,7 +107,7 @@ public class tcpServerSocket extends Thread implements Runnable {
 					acceptSocket = iter.next();
 					if (acceptSocket == null) {
 						System.err.println("did not find accept Socket");					
-						millisleep(50);
+					//	millisleep(50);
 					} else {
 						if (acceptSocket.isClosed()) {
 							System.err.println("found a closed accept Socket,removing it");	
@@ -128,39 +128,24 @@ public class tcpServerSocket extends Thread implements Runnable {
 	
 	public String readStringFromStream(InputStream in) 
 			throws IOException {
-		//boolean bStart=false;
+		boolean bStart=false;
 		boolean bEnd=false;
 		StringBuffer out = new StringBuffer();
-		String sentinel="";
 		byte[] b = new byte[1024];
 		int i=0;
 		while (bEnd == false) {
 			int n;
 			n = in.available();
 			if (n == 0) {
-				//if (bStart == true) 
-				bEnd=true;
-			        //else {
-				/* If we dont get any data in the stream, we wait for 10 500 millisecond intervals
-                                   before concluding to return empty string to upper layer.
-                                   As soon as we do that, we send the XML file for parsing.
-                                   A better approach is to send the length of the file in the header and waiting till 
-                                   we receive that many.
-                                 */
-				//if (i++ > 10) return "END";
-				//}
+				if (bStart == true) bEnd=true;
 			}
 			else  {
 				n = in.read(b);
-				//if ((bStart == false) && (n > 0)) bStart=true;
-				//if (bEnd == true) {
-				//	break;
-				//}
-				//sentinel =(new String(b, n-3, 3));
-				//System.out.println("sentinel=" + sentinel);
+				if ((bStart == false) && (n > 0)) bStart=true;
+				if (bEnd == true) {
+					break;
+				}
 				out.append(new String(b, 0, n));
-				//if (sentinel.equals("END"))
-				break;
 			}
 		}
 		return out.toString();
