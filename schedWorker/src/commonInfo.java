@@ -55,10 +55,10 @@ public class commonInfo {
 		
 		myAMIID = "ami-3f107c56";
 		spotInstancePrice = 0.007;
-		remoteWorker = true;
+		remoteWorker = false;
 		localWorkers = 1;
 		serverPort = 9100;
-		maxRemoteWorkers = 32 ;
+		maxRemoteWorkers = 30 ;
 		
 		schedMode = 1; //0 - Normal schedule for controlling remote instance
 					  //1  - Disabled for manual instances to do the job
