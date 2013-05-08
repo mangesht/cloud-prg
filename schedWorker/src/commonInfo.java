@@ -53,7 +53,7 @@ public class commonInfo {
 		System.out.println("CI unlocking ");
 		
 		
-		myAMIID = "ami-79ddb010";
+		myAMIID = "ami-3f107c56";
 		spotInstancePrice = 0.007;
 		remoteWorker = true;
 		localWorkers = 1;
