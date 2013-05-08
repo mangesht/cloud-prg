@@ -70,9 +70,12 @@ public class taskReceiver extends Thread {
 		  try {	   
 			  if (cInfo.remoteWorker == true) {
 				  /* put into remote task queue SQS ? */
+				  //System.out.println("Adding to remote worker queue :\n{"	+ requestXML + "}");
 				  remoteSend(requestXML);							 
 				  
 			  } else {
+				  /*System.out.println("Adding to local worker queue :\n{" 
+						  								+ requestXML + "}");*/
 				  for(String message : requestXML) { 
 					  cInfo.taskQ.put(message);
 				  }
@@ -138,11 +141,7 @@ public class taskReceiver extends Thread {
 			String taskRequestXML; 
 		try {
  		    xmlRequest = xmlRequest.trim();
-	           	 if (xmlRequest.length() > 60) {
-		    		System.out.println( "Request={"+xmlRequest.substring(0, 50)+ 
-						   " ... " +  xmlRequest.substring(xmlRequest.length() - 50, 
-						 xmlRequest.length()) +"}");			
-			}
+		    //System.out.println(xmlRequest);			
 			DocumentBuilderFactory fact1 = DocumentBuilderFactory.newInstance();
 			fact1.setValidating(false);
 			fact1.setIgnoringElementContentWhitespace(true);
@@ -153,6 +152,8 @@ public class taskReceiver extends Thread {
 			Document requestDoc = build1.parse(new BufferedInputStream(astream));
 			Element requestElement =  requestDoc.getDocumentElement();
 			NodeList taskBlockNode = requestElement.getChildNodes();
+			System.out.println("taskBlockNode.getLength()=" 
+							+ taskBlockNode.getLength());
 			
 			for (int i = 0; i < taskBlockNode.getLength(); i++) {
 				String taskNodes;
@@ -183,9 +184,14 @@ public class taskReceiver extends Thread {
 						}
 						taskRequestXML += "</taskblock>";
 						taskRequestXML += "</response>";
+						System.out.println("JOb request " + taskRequestXML);
 						jobRequests.add(taskRequestXML);
 					}
+					System.out.println("JOb request Size" + jobRequests.size());
 					putrequestIntoQueue(jobRequests);
+					
+					//putrequestIntoQueue(taskRequestXML);
+					
 				}
 			}
 				
@@ -195,7 +201,7 @@ public class taskReceiver extends Thread {
 		}		
 	} 
 	
-/*
+	/*
    public boolean receiveUDPRequestXML() {
 		  byte[] receiveData = new byte[11024];
 		  try {
@@ -220,36 +226,26 @@ public class taskReceiver extends Thread {
 			  return false;
 		  }
 	   }
-*/
+   */
    public boolean receiveTCPRequestXML() {
 		  Socket acceptSocket;
-		  String tempReadData="";
+		  
 		  try {
-			  boolean bNoSentinel=true;
 			  acceptSocket = cInfo.serverTCPSocket.retrieveAcceptSocket();
-			  if (acceptSocket == null) return false;
+			  if (acceptSocket == null) {
+				  System.out.println("Accept Socket Null"); 
+				  return false; } 
+			  System.out.println("AcceptSocket " + acceptSocket.getPort());
+			 
 			  cInfo.acceptSocket = acceptSocket;
+			  System.out.println("Buffer Size " +  acceptSocket.getReceiveBufferSize());
 			  tcpReceivedRequests = "";
-			  while(bNoSentinel) {
-				  String sentinel;
-				  tempReadData = cInfo.serverTCPSocket.readString(cInfo.acceptSocket);
-			          if (tempReadData.equals("END")) {
-					return false;
-			          }
-				  sentinel = tempReadData.substring(tempReadData.length()-3, tempReadData.length());
-				  if (sentinel.equals("END")) {
-					 System.out.println("Completed Reading..");
- 					 bNoSentinel=false;
-				  }
-			  	  tempReadData= tempReadData.trim();
-				  if (bNoSentinel)
-				  tcpReceivedRequests += tempReadData;
-		                  else 
-				  tcpReceivedRequests += tempReadData.substring(0, tempReadData.length()-3);
-			  }
+			  tcpReceivedRequests = cInfo.serverTCPSocket.readString(cInfo.acceptSocket);
+			  //tcpReceivedRequests = tcpReceivedRequests.trim();
+			  System.out.println("Received from client " +tcpReceivedRequests  ) ;
 			  return true;
 		      
-		  } catch (Exception error) {
+		  } catch (IOException error) {
 			  System.err.println("Task Receiver : " +
 					  "Error in socket communication " + error.getMessage());
 			  cInfo.serverSocket.close();
@@ -275,10 +271,45 @@ public class taskReceiver extends Thread {
 		String residual = new String(); 
 		
 		while (true){
+			System.out.print(".");
 			bRet = receiveTCPRequestXML();
-			if (bRet == true) {
+			if (bRet == true && tcpReceivedRequests.length() > 0 ) {
+			        if(residual.length() > 0) { 
+					tcpReceivedRequests = residual + tcpReceivedRequests;
+					residual = "";
+				} 
+				if(tcpReceivedRequests.contains("<request>")) { 
+					System.out.println("First request");
+					if(tcpReceivedRequests.contains("</request>")){
+					//if (false)  
+						System.out.println("Last request");
+						// DOnothing 
+					}else{
+						int idx;
+						idx = tcpReceivedRequests.lastIndexOf("</taskBlock>") +  "</taskBlock>".length();
+						residual = tcpReceivedRequests.substring(idx);
+						tcpReceivedRequests = tcpReceivedRequests.substring(0, idx);
+						tcpReceivedRequests += "</request>";
+						System.out.println("Residue-" + residual );
+						System.out.println("tcpReceivedRequests-" + tcpReceivedRequests );
+						// Need to suffix with end request tag 
+						
+					}
+				}else if (tcpReceivedRequests.contains("</request>")) {
+					tcpReceivedRequests = "<request>" + tcpReceivedRequests ; 
+				}else{
+					int idx;
+					idx = tcpReceivedRequests.lastIndexOf("</taskBlock>") +  "</taskBlock>".length();
+					residual = tcpReceivedRequests.substring(idx);
+					tcpReceivedRequests = tcpReceivedRequests.substring(0, idx);
+					tcpReceivedRequests += "</request>";
+					tcpReceivedRequests = "<request>" + tcpReceivedRequests ; 
+					System.out.println("Residue-" + residual );
+					System.out.println("tcpReceivedRequests-" + tcpReceivedRequests );
+				}
 				processRequest(tcpReceivedRequests);
 			}
+			millisleep(500);
 		}
 		
 	}
