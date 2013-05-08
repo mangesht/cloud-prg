@@ -66,7 +66,7 @@ public class instanceManager extends Thread {
 	}
 	public ArrayList<String> launchWorkers(int workersToLaunch){ 
 		// Create the AmazonEC2Client object so we can call various APIs.
-
+		ArrayList<String> spotInstanceRequestIds = new ArrayList<String>();
 		// Initializes a Spot Instance Request
     	RequestSpotInstancesRequest requestRequest = new RequestSpotInstancesRequest();
     	// Request 1 x t1.small instance with a bid price of $0.007 
@@ -98,15 +98,17 @@ public class instanceManager extends Thread {
     		requestResponses = requestResult.getSpotInstanceRequests();
     	}catch(AmazonServiceException e ) { 
     		System.out.println("Request spot instance failed Service Exception " + e.getMessage());
+    		return spotInstanceRequestIds;
     	}catch(AmazonClientException e ) { 
     		System.out.println("Request spot instance failed " + e.getMessage());
+    		return spotInstanceRequestIds; 
     	}
     	ModifyInstanceAttributeRequest m = new ModifyInstanceAttributeRequest(); 
     	m.withInstanceInitiatedShutdownBehavior("terminate");		
 
     	// Setup an arraylist to collect all of the request ids we want to watch hit the running
     	// state.
-    	ArrayList<String> spotInstanceRequestIds = new ArrayList<String>();
+    	
 
     	// Add all of the request ids to the hashset, so we can determine when they hit the
     	// active state.
