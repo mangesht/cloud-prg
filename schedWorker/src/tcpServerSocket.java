@@ -42,10 +42,14 @@ public class tcpServerSocket extends Thread implements Runnable {
       while (true) {
          try {         
             Socket s = listenSocket.accept();
+            System.out.println("Got new socket ");
             String host = s.getInetAddress().getHostName();
-            //removeAll();
-	    acceptSocketList.clear();
+            //System.out.println(" P2 Got new socket " + s.toString());
+            removeAll();
+	    //acceptSocketList.clear();
+            //System.out.println(" P3 Got new socket ");
             acceptSocketList.add(s);
+            //System.out.println(" P4 Got new socket ");
             millisleep(50);
          }catch (Exception error) {
             System.err.println("Unable to listen to server socket");
@@ -56,12 +60,13 @@ public class tcpServerSocket extends Thread implements Runnable {
 
    public void removeAll() {
       Socket acceptSocket = null;
+
       if (acceptSocketList == null) {
          System.err.println("acceptSocketList not initialised");
          return;
       } else 
       if (acceptSocketList.isEmpty()) {
-         //System.err.println("accept Socket not available yet (1)");
+         System.err.println("accept Socket not available yet (1)");
          return;
       }
       else {
@@ -75,8 +80,8 @@ public class tcpServerSocket extends Thread implements Runnable {
                if (acceptSocket != null) {
                   System.err.println("found a accept Socket; removing");
                   iter.remove();
-               } else {
-            }
+		  break;
+               }
            }
           }
        }
@@ -95,7 +100,7 @@ public class tcpServerSocket extends Thread implements Runnable {
          return null;
       } else 
       if (acceptSocketList.isEmpty()) {
-         //System.err.println("accept Socket not available yet (1)");
+         System.err.println("accept Socket not available yet (1)");
          return null;
       }
       else {
@@ -116,13 +121,14 @@ public class tcpServerSocket extends Thread implements Runnable {
                                                         acceptSocket = null;
                      continue;
                   } else {
-                     //System.err.println("found a open accept Socket");
-                     //System.err.println("returning an accept Socket");
+                    //System.err.println("found a open accept Socket " + acceptSocket.toString());
+                    //System.err.println("returning an accept Socket");
                      break;
                   }
                }
             }
          }
+        // System.err.println("F1 : found a open accept Socket " + acceptSocket.toString());
          return acceptSocket;
       }
    }
@@ -138,7 +144,8 @@ public class tcpServerSocket extends Thread implements Runnable {
          int n;
          n = in.available();
          if (n == 0) {
-            if (bStart == true) bEnd=true;
+           //if (bStart == true) 
+			bEnd=true;
          }
          else  {
             n = in.read(b);
