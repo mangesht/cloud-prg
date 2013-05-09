@@ -66,7 +66,7 @@ public class tcpServerSocket extends Thread implements Runnable {
          return;
       } else 
       if (acceptSocketList.isEmpty()) {
-         System.err.println("accept Socket not available yet (1)");
+         //System.err.println("accept Socket not available yet (1)");
          return;
       }
       else {
@@ -100,7 +100,7 @@ public class tcpServerSocket extends Thread implements Runnable {
          return null;
       } else 
       if (acceptSocketList.isEmpty()) {
-         System.err.println("accept Socket not available yet (1)");
+        // System.err.println("accept Socket not available yet (1)");
          return null;
       }
       else {

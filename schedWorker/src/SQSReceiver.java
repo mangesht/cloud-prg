@@ -24,6 +24,8 @@ public class SQSReceiver extends Thread {
 		List<String> strs = new ArrayList<String>();
 		List<Message> messages = new ArrayList<Message> () ;
 		String messageRecieptHandle ;
+	        int maxCnt = 0;
+
 		 
 		while(true) { 
 				messages.clear();	
@@ -37,7 +39,7 @@ public class SQSReceiver extends Thread {
 				
 				if (messages.size() > 0 ) {
 					//System.out.println("SR Locking ");
-					
+				        //maxCnt += 10;	
 					//cInfo.getLock();
 					try {
 						this.rcHandle.available.acquire();
@@ -76,6 +78,17 @@ public class SQSReceiver extends Thread {
 					e.printStackTrace();
 				}
 			}
+			/*	if(maxCnt >= 100) { 
+				   // After getting message for long  time , take rest 
+				  maxCnt = 100;
+				try {
+					sleep(1);
+				} catch (InterruptedException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+				} */
+
 		}
 		
 		
